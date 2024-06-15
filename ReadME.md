@@ -32,7 +32,7 @@ After you have all above setup, you can install RavennaRecorder by the following
 1. If you don't have git installed, install it by `sudo apt install git`
 2. Get the code from git repo: `git clone https://github.com/PureLin/RavennaRecorder.git`
 3. Switch to the directory: `cd RavennaRecorder` and make the script executable: `sudo chmod +x install.sh`
-4. Run the installation script: `sudo ./install.sh`
+4. Run the installation script: `sudo -E ./install.sh`
 5. After install finished, you can check the status by `sudo systemctl status RavennaRecorder`
 6. If everything works fine, you should open the browser and type `http://<device_ip>:3031` to access the web interface.
 
@@ -74,3 +74,12 @@ Example of the config file, and the explanation of each field:
         "splitTimeInMinutes": 60,
         "startRecordImmediately": "when device see a new stream, start recording immediately or wait for user to start",
     }
+
+## Control Webpage
+
+The control for this application is a static webpage "HDMIMain.html" in the root of the project, using websocket to
+communicate with the backend.
+It will copy to the home directory of the user when install the application, when you connect to
+the  `http://<device_ip>:3031`, the html file will be read again.
+So you can change the html file in your home dir by your need, just refresh the control page will load the new html
+file.
