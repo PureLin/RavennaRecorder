@@ -11,16 +11,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <unistd.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <ifaddrs.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include <linux/netlink.h>
-#include <arpa/inet.h>
 #include <ctype.h>
 #include <sched.h>
 #include <websocketpp/config/asio_no_tls.hpp>
