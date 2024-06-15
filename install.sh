@@ -27,7 +27,9 @@ cp HDMIMain.html $HOME/HDMIMain.html
 
 echo "\n\n\n\nCreate service\n\n\n\n"
 
-sudo rm /etc/systemd/system/RavennaRecorder.service
+if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
+    sudo rm /etc/systemd/system/RavennaRecorder.service
+fi
 echo "[Unit]" | sudo tee /etc/systemd/system/RavennaRecorder.service
 echo "Description=RavennaRecorder" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
 echo "After=network.target" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
