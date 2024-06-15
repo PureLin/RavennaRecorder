@@ -1,9 +1,9 @@
-echo "Get dependencies libs and build tools\n\n\n\n"
+echo "Get dependencies libs and build tools\n"
 
 sudo apt-get update
 sudo apt install cmake build-essential libsndfile1 libsndfile1-dev libboost-all-dev htop net-tools debhelper devscripts lockfile-progs -y
 
-echo "\n\n\n\nInstall usbmount\n\n\n\n"
+echo "\nInstall usbmount\n"
 set -e
 git clone https://github.com/rbrito/usbmount.git
 cd usbmount
@@ -11,21 +11,21 @@ sudo dpkg-buildpackage -us -uc -b
 sudo dpkg -i ../usbmount_*.deb
 cd ..
 
-echo "\n\n\n\nBuild the project\n\n\n\n"
+echo "\nBuild the project\n"
 
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j4
 
-echo "\n\n\n\nCopy build result\n\n\n\n"
+echo "\nCopy build result\n"
 cp RavennaRecorder /usr/local/bin
 cd ..
 
-echo "\n\n\n\nCopy config page\n\n\n\n"
+echo "\nCopy config page\n"
 cp HDMIMain.html $HOME/HDMIMain.html
 
-echo "\n\n\n\nCreate service\n\n\n\n"
+echo "\nCreate service\n"
 
 if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
     sudo rm /etc/systemd/system/RavennaRecorder.service
@@ -45,12 +45,12 @@ echo "" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
 echo "[Install]" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
 echo "WantedBy=multi-user.target" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
 
-echo "\n\n\n\nStart service\n\n\n\n"
+echo "\nStart service\n"
 sudo systemctl daemon-reload
 sudo systemctl enable RavennaRecorder
 sudo systemctl start RavennaRecorder
 
-echo "\n\n\n\nInstallation complete, service status:\n\n\n\n"
+echo "\nInstallation complete, service status:\n"
 sudo systemctl status RavennaRecorder
 
-echo "\n\n\n\nYou can reboot the system to check if the service starts automatically."
+echo "\nYou can reboot the system to check if the service starts automatically."
