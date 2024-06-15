@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>HDMI2Ravenna Config</title>
+</head>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let currentConfigs = {
+        "monitor_avg_second": 0,
+        "buffer_max_threshold_million_second": 0,
+        "buffer_min_threshold_million_second": 0,
+        "calculate_linear_regression_second": 0,
+        "calculate_linear_regression_max_second": 0,
+        "confidence_threshold": 0,
+        "speed_change_when_reach_limit": 0,
+        "speed_change_min_resolution": 0,
+        "adjust_by_buffer_threshold": 0,
+    };
+    let web_socket_port = 9000;
+    let ws = null;
+
+    function wsopen() {
+        if (!ws) {
+            return;
+        }
+        ws.send(JSON.stringify({"command": "refresh_eq_config"}));
+        //set status header to connected and green
+        var status = document.getElementsByClassName("status")[0];
+        status.innerHTML = "已连接";
+        status.style.color = "green";
+        status.onclick = null;
+    };
+
+    function wsclose() {
+        wsLost();
+    }
+
+    function wserror(error) {
+        wsLost();
+    }
+
+    function wsLost() {
+        // set status header to disconnected and red
+        const status = document.getElementsByClassName("status")[0];
+        status.innerHTML = "已断开";
+        status.style.color = "red";
+        setTimeout(reconnect, 1000);
+    }
+
+    function wsmessage(evt) {
+        var received_msg = JSON.parse(evt.data);
+        switch (received_msg.type) {
+            case "current_info":
+                handleMessage(received_msg);
+                break;
+            default:
+                console.log(evt.data);
+                break;
+        }
+    }
+</script>
+<script>
+    const chartMap = {};
+
+    function createChart(id, dataLength, labels = []) {
+        const ctx = document.getElementById(id + "Chart");
+        chartMap[id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                aspectRatio: 2,
+                maintainAspectRatio: true,
+                responsive: true,
+                animation: false,
+            }
+        });
+        for (let i = 0; i < dataLength; i++) {
+            chartMap[id].data.datasets.push({
+                label: labels.length > 0 ? labels[i] : 'pi' + i,
+                data: [],
+                borderWidth: 1,
+            });
+        }
+    }
+
+    setTimeout(function () {
+        createChart("buffer", 6);
+        createChart("writeSr", 6);
+        createChart("readSr", 2, ["readSr", "avgWriteSr"]);
+        createChart("freq", 1, ["timeFreq"]);
+        createChart("adjustInfo", 5, ["srDiff", "writeSrVar", "threshold", "writeSrVarThreshold", "hit"]);
+    }, 1000);
+
+    function handleMessage(current_info) {
+        let buffer_info = current_info.buffer;
+        let chart = chartMap["buffer"];
+        if (!chart) {
+            return;
+        }
+        let data = chart.data;
+        let labels = data.labels;
+        if (labels.length > 1000) {
+            labels.shift();
+        }
+        labels.push(new Date().toLocaleTimeString());
+        for (let i = 0; i < buffer_info.length; i++) {
+            const buffer = buffer_info[i];
+            if (data.datasets[i].data.length > 1000) {
+                data.datasets[i].data.shift();
+            }
+            data.datasets[i].data.push(buffer);
+        }
+        chart.update();
+
+        let sample_rate_info = current_info.sample_rate;
+        chart = chartMap["writeSr"];
+        data = chart.data;
+        labels = data.labels;
+        if (labels.length > 1000) {
+            labels.shift();
+        }
+        labels.push(new Date().toLocaleTimeString());
+        for (let i = 0; i < sample_rate_info.length - 1; i++) {
+            let sr = sample_rate_info[i];
+            if (data.datasets[i].data.length > 1000) {
+                data.datasets[i].data.shift();
+            }
+            data.datasets[i].data.push(sr);
+        }
+        chart.update();
+
+        let avg_write_sr = 0;
+        for (let i = 0; i < sample_rate_info.length - 1; i++) {
+            avg_write_sr += sample_rate_info[i];
+        }
+        avg_write_sr /= (sample_rate_info.length - 1);
+        const sr = sample_rate_info[sample_rate_info.length - 1];
+        chart = chartMap["readSr"];
+        data = chart.data;
+        labels = data.labels;
+        if (labels.length > 1000) {
+            labels.shift();
+        }
+        labels.push(new Date().toLocaleTimeString());
+        if (data.datasets[0].data.length > 1000) {
+            data.datasets[0].data.shift();
+        }
+        data.datasets[0].data.push(sr);
+        if (data.datasets[1].data.length > 1000) {
+            data.datasets[1].data.shift();
+        }
+        data.datasets[1].data.push(avg_write_sr);
+        chart.update();
+
+        let freq_info = current_info.frequency;
+        chart = chartMap["freq"];
+        data = chart.data;
+        labels = data.labels;
+        if (labels.length > 1000) {
+            labels.shift();
+        }
+        labels.push(new Date().toLocaleTimeString());
+        const freq = freq_info;
+        if (data.datasets[0].data.length > 1000) {
+            data.datasets[0].data.shift();
+        }
+        data.datasets[0].data.push(freq);
+        chart.update();
+
+        let adjust_info = current_info.adjust_info;
+        chart = chartMap["adjustInfo"];
+        data = chart.data;
+        labels = data.labels;
+        if (labels.length > 1000) {
+            labels.shift();
+        }
+        labels.push(new Date().toLocaleTimeString());
+        data.datasets[0].data.push(adjust_info.sr_diff);
+        if (data.datasets[0].data.length > 1000) {
+            data.datasets[0].data.shift();
+        }
+        data.datasets[1].data.push(adjust_info.write_sr_variance);
+        if (data.datasets[1].data.length > 1000) {
+            data.datasets[1].data.shift();
+        }
+        data.datasets[2].data.push(adjust_info.threshold);
+        if (data.datasets[2].data.length > 1000) {
+            data.datasets[2].data.shift();
+        }
+        data.datasets[3].data.push(adjust_info.write_sr_variance_threshold);
+        if (data.datasets[3].data.length > 1000) {
+            data.datasets[3].data.shift();
+        }
+        data.datasets[4].data.push(adjust_info.sample_rate_diff_hit / 100);
+        if (data.datasets[4].data.length > 1000) {
+            data.datasets[4].data.shift();
+        }
+        chart.update();
+
+        let logs = document.getElementById("logs");
+        if (current_info.logs) {
+            for (let i = 0; i < current_info.logs.length; i++) {
+                logs.value += current_info.logs[i] + "\n";
+            }
+        }
+
+        let hdmi_connected = current_info.hdmi_connected;
+        for (let i = 0; i < hdmi_connected.length; i++) {
+            let pi = document.getElementById("pi-" + (i + 1));
+            if (hdmi_connected[i]) {
+                pi.style.color = "green";
+            } else {
+                pi.style.color = "red";
+            }
+        }
+    }
+
+    function dropData(count) {
+        let chart = chartMap["buffer"];
+        let data = chart.data;
+        let labels = data.labels;
+        for (let c = 0; c < count; c++) {
+            labels.shift();
+            for (let i = 0; i < data.datasets.length; i++) {
+                data.datasets[i].data.shift();
+            }
+        }
+        chart.update();
+
+        chart = chartMap["writeSr"];
+        data = chart.data;
+        labels = data.labels;
+        for (let c = 0; c < count; c++) {
+            labels.shift();
+            for (let i = 0; i < data.datasets.length; i++) {
+                data.datasets[i].data.shift();
+            }
+        }
+        chart.update();
+
+        chart = chartMap["readSr"];
+        data = chart.data;
+        labels = data.labels;
+        for (let c = 0; c < count; c++) {
+            labels.shift();
+            data.datasets[0].data.shift();
+            data.datasets[1].data.shift();
+        }
+        chart.update();
+
+        chart = chartMap["freq"];
+        data = chart.data;
+        labels = data.labels;
+        for (let c = 0; c < count; c++) {
+            labels.shift();
+            data.datasets[0].data.shift();
+        }
+        chart.update();
+
+        chart = chartMap["adjustInfo"];
+        data = chart.data;
+        labels = data.labels;
+        for (let c = 0; c < count; c++) {
+            labels.shift();
+            data.datasets[0].data.shift();
+            data.datasets[1].data.shift();
+            data.datasets[2].data.shift();
+            data.datasets[3].data.shift();
+            data.datasets[4].data.shift();
+        }
+        chart.update();
+    }
+
+    <!--Create a websocket connection to current server with port 9002-->
+
+    var remote = window.location.hostname;
+    if (remote === "localhost") {
+        let params = new URLSearchParams(window.location.search);
+        remote = params.get("ip");
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "http://" + remote + ":3000/port", true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            web_socket_port = JSON.parse(xhr.responseText).port;
+            ws = new WebSocket("ws://" + remote + ":" + web_socket_port);
+            ws.onopen = wsopen;
+            ws.onclose = wsclose;
+            ws.onerror = wserror;
+            ws.onmessage = wsmessage;
+        }
+    };
+    xhr.onerror = function () {
+        setTimeout(reconnect, 1000);
+    }
+    xhr.send();
+
+    function reconnect() {
+        xhr.open("GET", "http://" + remote + ":3000/port", true);
+        xhr.send();
+    }
+
+</script>
+<style>
+    .main {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        justify-content: left;
+        text-align: left;
+    }
+
+    button {
+        max-width: 100px;
+        min-width: 50px;
+        width: 15%;
+    }
+
+
+    textarea {
+        resize: none;
+        width: 100%;
+        min-height: 300px;
+        height: 30%;
+        font-size: 16px;
+    }
+
+    .leftMargin {
+        margin-left: 50px;
+        font-size: 125%;
+    }
+
+    .section {
+        display: flex;
+    }
+
+    .status {
+        cursor: pointer;
+    }
+
+</style>
+
+<body>
+<div class="main">
+    <div class="section">
+        <h2 style="margin-right: 10px;">HDMI2Ravenna</h2>
+        <h2 class="status"></h2>
+    </div>
+    <div class="section">
+        <input type="number" id="dropDataCount" placeholder="DropDataCount" value="1" width="100px">
+        <button onclick="dropData(document.getElementById('dropDataCount').value)">Drop Data</button>
+    </div>
+    <div class="section" style="margin: 20px">
+        <div id="pi-1" class="leftMargin">Pi-1</div>
+        <div id="pi-2" class="leftMargin">Pi-2</div>
+        <div id="pi-3" class="leftMargin">Pi-3</div>
+        <div id="pi-4" class="leftMargin">Pi-4</div>
+        <div id="pi-5" class="leftMargin">Pi-5</div>
+        <div id="pi-6" class="leftMargin">Pi-6</div>
+    </div>
+    <div class="section">
+        <textarea id="logs" readonly></textarea>
+    </div>
+    <div class="section">
+        <div style="width: 100%; height: 1080px;">
+            <canvas id="bufferChart"></canvas>
+            <canvas id="writeSrChart"></canvas>
+            <canvas id="readSrChart"></canvas>
+            <canvas id="freqChart"></canvas>
+            <canvas id="adjustInfoChart"></canvas>
+        </div>
+    </div>
+</div>
+</body>
+
+</html>
