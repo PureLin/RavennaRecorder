@@ -11,8 +11,9 @@ void setup() {
 
 void wait_for_ip_address() {
     struct ifaddrs *ifaddr, *ifa;
-    int family, s;
+    int s;
     bool found = false;
+    int foundTime = 0;
     while (!found) {
         if (getifaddrs(&ifaddr) == -1) {
             logging("getifaddrs() failed");
@@ -28,7 +29,10 @@ void wait_for_ip_address() {
                     logging("getnameinfo() failed: %s", gai_strerror(s));
                     continue;
                 }
-                logging("Interface: %s\tAddress: %s", ifa->ifa_name, zeroconf_ip_address);
+                //print ip address every 30 seconds if still not found ip
+                if (foundTime == 0) {
+                    logging("Interface: %s\tAddress: %s", ifa->ifa_name, zeroconf_ip_address);
+                }
                 //check if ip address is starting with 169.254
                 if (strncmp(zeroconf_ip_address, "169.254", 7) == 0) {
                     found = true;
@@ -39,6 +43,7 @@ void wait_for_ip_address() {
 
         freeifaddrs(ifaddr);
         sleep(1);
+        foundTime = (foundTime + 1) % 30;
     }
     logging("IP address: %s", zeroconf_ip_address);
 }

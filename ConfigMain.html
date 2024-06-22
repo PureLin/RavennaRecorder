@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>RavennaRecorder Config</title>
+</head>
+<script>
+    let web_socket_port = 9000;
+    let ws = null;
+    let password = null;
+    //create a post request to get the current web socket port
+    const refreshStreamCommand = JSON.stringify({
+        "command": "refresh_stream_list"
+    });
+
+    let stream_list;
+
+    window.onload = function () {
+        password = prompt("Input Password:", "0000");
+        document.getElementById("password").value = password;
+        reconnect();
+    };
+
+    function wsopen() {
+        if (!ws) {
+            return;
+        }
+        ws.send(refreshStreamCommand);
+        //set status header to connected and green
+        var status = document.getElementsByClassName("status")[0];
+        status.innerHTML = "Connected";
+        status.style.color = "green";
+        status.onclick = null;
+    };
+
+    function wsclose() {
+        // set status header to disconnected and red
+        var status = document.getElementsByClassName("status")[0];
+        status.innerHTML = "Disconnected";
+        status.style.color = "red";
+        setTimeout(reconnect, 1000);
+    }
+
+    function wserror(error) {
+        // set status header to disconnected and red
+        var status = document.getElementsByClassName("status")[0];
+        status.innerHTML = "Connection Error";
+        status.style.color = "red";
+        status.onclick = reconnect;
+    }
+
+    function getColor(status) {
+        if (status === "Recording") {
+            return "red";
+        } else if (status === "Error") {
+            return "blue";
+        } else {
+            return "black";
+        }
+    }
+
+    function getButtonTitle(status) {
+        if (status === "Recording") {
+            return "STOP";
+        } else if (status === "Error") {
+            return "RESTART";
+        } else {
+            return "START";
+        }
+    }
+
+    function changeStream(index) {
+        if (index < 0) {
+            let cmd = {
+                "command": "stop_all_stream"
+            };
+            ws.send(JSON.stringify(cmd));
+            return;
+        }
+        let stream = stream_list[index];
+        let action = "";
+        if (stream.status === "Recording") {
+            action = "stop";
+        } else {
+            action = "start";
+        }
+        let cmd = {
+            "command": "set_stream",
+            "stream_name": stream.stream_name,
+            "action": action
+        };
+        ws.send(JSON.stringify(cmd));
+    }
+
+    function changeChannelSelected(index, channel, selected) {
+        let stream = stream_list[index];
+        let cmd = {
+            "command": "set_channel_selected",
+            "stream_name": stream.stream_name,
+            "channel": channel,
+            "selected": selected
+        };
+        ws.send(JSON.stringify(cmd));
+    }
+
+    function sliceStream(index) {
+        let stream = stream_list[index];
+        let cmd = {
+            "command": "set_stream",
+            "stream_name": stream.stream_name,
+            "action": "slice"
+        };
+        ws.send(JSON.stringify(cmd));
+    }
+
+    function changeSettings(settings) {
+        let cmd = {
+            "command": "update_config"
+        };
+        if (settings.folder) {
+            cmd.folder = settings.folder;
+        }
+        if (settings.split_time_minute) {
+            cmd.split_time_minute = settings.split_time_minute;
+        }
+        if (settings.start_immediately != null) {
+            cmd.start_immediately = settings.start_immediately;
+        }
+        ws.send(JSON.stringify(cmd));
+    }
+
+    function changePassWord() {
+        password = document.getElementById("password").value;
+        let cmd = {
+            "command": "update_password",
+            "password": password
+        };
+        ws.send(JSON.stringify(cmd));
+        alert("Password Changed!");
+    }
+
+    function getChannelCheckbox(stream_id, index, channel_mask, recording) {
+        return `<input type="checkbox" id="checkbox${index}" ${channel_mask[index] === '1' ? "checked" : ""}  ${recording ? "disabled" : ""} onclick="changeChannelSelected(${stream_id},${index},this.checked)" title="ch${index}">`
+    }
+
+    function wsmessage(evt) {
+        const received_msg = JSON.parse(evt.data);
+        switch (received_msg.type) {
+            case "current_status":
+                stream_list = received_msg.stream_list;
+                const table = document.getElementById("stream_info_table");
+                table.innerHTML = `
+                <tr>
+                    <th>Name</th>
+                    <th>IP</th>
+                    <th>Format</th>
+                    <th>FileStatus</th>
+                    <th>ChannelSelected</th>
+                    <th>Actions</th>
+                </tr>
+            `;
+                for (let i = 0; i < received_msg.stream_list.length; i++) {
+                    const stream = received_msg.stream_list[i];
+                    const color = getColor(stream.status);
+                    let row = table.rows[i + 1];
+                    if (!row) {
+                        row = table.insertRow(-1);
+                    }
+                    row.innerHTML = `
+                    <td>${stream.stream_name}</td>
+                    <td>${stream.source_ip}</td>
+                    <td>${stream.sample_rate / 1000}KHz*${stream.channel_count}ch@${stream.bit_depth}bit</td>
+                    <td>${stream.file_name ? stream.file_name : "----------------------------"}</td>
+                    <td>
+                        ${Array(parseInt(stream.channel_count)).fill(0).map((_, index) => getChannelCheckbox(i, index, stream.channel_selected, stream.status === "Recording")).join('')}
+                    </td>
+                    <td>
+                        <button style="margin: 10px" onclick=changeStream(${i})>${getButtonTitle(stream.status)}</button>
+                        <label >   </label>
+                        <button style="margin: 10px" onclick=sliceStream(${i}) ${stream.status === "Recording" ? '' : 'disabled'}>SliceFile</button>
+                    </td>
+                `;
+                    row.cells[0].style.color = color;
+                }
+                document.getElementById("folder_list").innerHTML = "";
+                let folder_list = received_msg.available_path;
+                for (let i = 0; i < folder_list.length; i++) {
+                    let option = document.createElement("option");
+                    option.value = folder_list[i];
+                    option.text = folder_list[i];
+                    document.getElementById("folder_list").add(option);
+                }
+                if (received_msg.folder) {
+                    document.getElementById("folder_list").value = received_msg.folder;
+                }
+                document.getElementById("split_time_minute").value = received_msg.split_time_minute;
+                document.getElementById("start_immediately").checked = received_msg.start_immediately;
+                break;
+            default:
+                console.log(evt.data);
+                break;
+        }
+    }
+</script>
+<script>
+    const ctxArray = [44100, 48000, 88200, 96000, 176400, 192000];
+    const chartMap = {};
+
+    function createChart(id) {
+        const ctx = document.getElementById("sr" + id + "chart");
+        chartMap[id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'SR',
+                    data: [],
+                    borderWidth: 1,
+                }]
+            },
+            options: {
+                aspectRatio: 2,
+                maintainAspectRatio: true,
+                responsive: true,
+                animation: false,
+            }
+        });
+    }
+
+    var remote = window.location.hostname;
+    var port = window.location.port;
+    if (remote.indexOf("localhost") !== -1) {
+        let params = new URLSearchParams(window.location.search);
+        remote = params.get("ip");
+        port = params.get("port");
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "http://" + remote + ":" + port + "/port", true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader("Authorization", password);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            web_socket_port = JSON.parse(xhr.responseText).port;
+            if (web_socket_port < 0) {
+                alert("Password Error!");
+                return;
+            }
+            ws = new WebSocket("ws://" + remote + ":" + web_socket_port);
+            ws.onopen = wsopen;
+            ws.onclose = wsclose;
+            ws.onerror = wserror;
+            ws.onmessage = wsmessage;
+        }
+    };
+    xhr.onerror = function () {
+        setTimeout(reconnect, 1000);
+    }
+
+    function reconnect() {
+        xhr.open("GET", "http://" + remote + ":" + port + "/port", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Authorization", password);
+        xhr.send();
+    }
+
+
+</script>
+<style>
+    .main {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        justify-content: left;
+        text-align: left;
+    }
+
+    button {
+        max-width: 150px;
+        min-width: 80px;
+        width: 15%;
+    }
+
+    .section {
+        display: flex;
+        margin: 10px;
+    }
+
+</style>
+
+<body>
+<div class="main">
+    <div class="section">
+        <h2 style="margin-right: 10px;">RavennaRecorder</h2>
+        <h2 class="status"></h2>
+    </div>
+    <h3>
+        Current Stream
+        <button style="width: 100px; height: 30px" onclick="ws.send(refreshStreamCommand)">Refresh</button>
+        <label style="width: 50px">      </label>
+        <button style="width: 100px; height: 30px" onclick="changeStream(-1)">Stop all</button>
+    </h3>
+    <table id="stream_info_table" border="1">
+        <tr>
+            <th>Name</th>
+            <th>IP</th>
+            <th>Format</th>
+            <th>FileStatus</th>
+            <th>ChannelSelect</th>
+            <th>Actions</th>
+        </tr>
+    </table>
+    <h3>System Configs</h3>
+    <div class="section">
+        <label for="folder_list" style="margin:0 20px">Save Path</label>
+        <select id="folder_list" onchange="changeSettings({folder:this.value})" style="width: 300px;"></select>
+    </div>
+    <div class="section">
+        <label for="split_time_minute" style="margin:0 20px">Auto Split Length</label>
+        <input type="number" id="split_time_minute" onchange="changeSettings({split_time_minute:this.value})"
+               style="width: 50px" max="60" min="1">
+        <label for="split_time_minute">Minutes</label>
+    </div>
+    <div class="section">
+        <label for="start_immediately" style="margin:0 20px">Start immediately when get new stream info</label>
+        <input type="checkbox" id="start_immediately" onchange="changeSettings({start_immediately:this.checked})">
+    </div>
+    <div class="section">
+        <label for="password" style="margin:0 20px">Password</label>
+        <input type="password" id="password" value="0000" style="width: 100px; margin-right: 30px">
+        <button onclick="changePassWord()">Change
+        </button>
+    </div>
+</div>
+</body>
+
+</html>

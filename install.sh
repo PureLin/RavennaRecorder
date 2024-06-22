@@ -23,7 +23,7 @@ cp RavennaRecorder /usr/local/bin
 cd ..
 
 echo "\nCopy config page\n"
-cp HDMIMain.html $HOME/HDMIMain.html
+cp ConfigMain.html $HOME/ConfigMain.html
 
 echo "\nCreate service\n"
 
