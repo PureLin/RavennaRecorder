@@ -23,7 +23,16 @@ cp RavennaRecorder /usr/local/bin
 cd ..
 
 echo "\nCopy config page\n"
+cd resource
+if [ "$1" = "soundpuzzle" ]; then
+    echo "Use SoundPuzzle config page."
+    cd soundpuzzle
+fi
 cp ConfigMain.html $HOME/ConfigMain.html
+cd ..
+if [ "$1" = "soundpuzzle" ]; then
+    cd ..
+fi
 
 echo "\nCreate service\n"
 
