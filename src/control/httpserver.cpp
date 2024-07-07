@@ -62,5 +62,5 @@ void httpserver::run() {
         res.set_content(j.dump(), "application/javascript");
     });
     logging("httpserver start");
-    svr.listen("0.0.0.0", 3031);
+    svr.listen("0.0.0.0", 80);
 }

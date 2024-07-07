@@ -62,15 +62,18 @@ void setup_sdp_socket() {
     }
 }
 
-void checkDisconnectedStreams() {
-    ConfigData::getInstance()->availablePaths = getAvailablePath();
-    for (auto &stream: ConfigData::getInstance()->streamInfoMap) {
-        if (stream.second.lastUpdateTimestamp < time(nullptr) - 45) {
-            if (streamRecorderMap.find(stream.first) != streamRecorderMap.end()) {
-                logging("Stream %s disconnected", stream.first.c_str());
-                streamRecorderMap[stream.first]->stop();
-                delete streamRecorderMap[stream.first];
-                streamRecorderMap.erase(stream.first);
+[[noreturn]] void checkDisconnectedStreams() {
+    while (true) {
+        sleep(2);
+        ConfigData::getInstance()->availablePaths = getAvailablePath();
+        for (auto &stream: ConfigData::getInstance()->streamInfoMap) {
+            if (stream.second.lastUpdateTimestamp < time(nullptr) - 45) {
+                if (streamRecorderMap.find(stream.first) != streamRecorderMap.end()) {
+                    logging("Stream %s disconnected", stream.first.c_str());
+                    streamRecorderMap[stream.first]->stop();
+                    delete streamRecorderMap[stream.first];
+                    streamRecorderMap.erase(stream.first);
+                }
             }
         }
     }
@@ -84,16 +87,13 @@ int sdp_listener_main() {
     }
     char buffer[MAX_SDP_PACKET_SIZE];
     long long n;
+    std::thread checkDisconnectedStreamsThread(checkDisconnectedStreams);
     while (true) {
         memset(buffer, 0, MAX_SDP_PACKET_SIZE);
         n = recvfrom(sdp_socket, buffer, MAX_SDP_PACKET_SIZE, 0, nullptr, nullptr);
         if (n <= 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
             logging("Can't receive data from sdp socket");
             break;
-        }
-        if (n <= 0) {
-            checkDisconnectedStreams();
-            continue;
         }
         bool is_sdp_removed = buffer[0] == 0x24;
         for (int i = 0; i <= n; ++i) {
@@ -103,7 +103,10 @@ int sdp_listener_main() {
         }
         stream_info streamInfo = SDPParser::parse(buffer);
         if (streamInfo.streamName.empty()) {
-            logging("Can't parse SDP info");
+            //Some time buffer will be random empty string, so ignore it when print log
+            if (n > 10) {
+                logging("Can't parse SDP info %d, %s", (int) n, buffer);
+            }
             continue;
         }
         if (streamInfo.channelCount > MAX_RECORD_CHANNELS) {
@@ -138,7 +141,6 @@ int sdp_listener_main() {
             logging("SDP changed %s", streamInfo.streamName.c_str());
             streamRecorderMap[streamInfo.streamName]->updateStreamInfo(streamInfo);
         }
-        checkDisconnectedStreams();
     }
     return 0;
 }
