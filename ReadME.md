@@ -1,10 +1,16 @@
 # RavennaRecorder
 
-This project is using for recording audio stream from Ravenna network and save it to a file.
+This project is using for create a device which can record audio stream from Ravenna network and save it to a file.
+
+This project is sponsored by SoundPuzzle, a company which provide audio solution for live event.
+
+![SoundPuzzle Logo](./resource/soundpuzzle/SP.png)
+
+## compatibility with other AoIP protocol
 
 Since Ravenna is compatible with AES67, this project should works with AES67 stream,but not tested yet.
 
-The recorder only works with multicast stream now.
+The recorder only works with multicast stream now, to use with Dante, you should change the stream to multicast.
 
 ## Hardware requirement
 
@@ -35,11 +41,11 @@ After you have all above setup, you can install RavennaRecorder by the following
     1. Install git by `sudo apt install git`
     2. Get the code from git repo: `git clone https://github.com/PureLin/RavennaRecorder.git`
     3. Switch to the directory: `cd RavennaRecorder` and make the script executable: `sudo chmod +x install.sh`
-    4. Run the installation script: `sudo -E ./install.sh`
+    4. Run the installation script: `sudo -E ./install.sh` (if you want to use a SoundPuzzle logo version UI, add "soundpuzzle" to the params: `sudo -E ./install.sh "soundpuzzle"` )
     5. After install finished, you can check the status by `sudo systemctl status RavennaRecorder`
 
 ### Check the installation
-If everything works fine, you should open the browser and type `http://<device_ip>:3031` to access the web interface.
+If everything works fine, you should open the browser and type `http://<device_ip>` to access the web interface.
 
 If you don't see the web interface, you can check the status by `sudo systemctl status RavennaRecorder`, and see the log file `Recorder.log` in your home dir.
 
@@ -90,6 +96,6 @@ Example of the config file, and the explanation of each field:
 The control for this application is a static webpage "ConfigMain.html" in the root of the project, using websocket to
 communicate with the backend.
 It will copy to the home directory when install application, and when you connect to
-the  `http://<device_ip>:3031`, the html file will be read again.
+the  `http://<device_ip>`, the html file will be read again.
 So you can change the html file in your home dir by your need, just refresh the control page will load the new html
 file, no restart is required.
