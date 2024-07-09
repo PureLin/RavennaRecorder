@@ -4,7 +4,7 @@ Ravenna Recorder is an open-source software developed in collaboration with Pure
 
 This software enables reliable and convenient recording of AES67/Ravenna audio streams on a Linux-based platform, 
 
-making it a perfect solution for Ravenna multi-track recording applications such as broadcasting, live events, and field recording.
+making it a perfect solution for AoIP multi-track recording applications such as broadcasting, live events, and field recording.
 
 Sound Puzzle providing funding and project oversight, while PureLIN led the development.
 
