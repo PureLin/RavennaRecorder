@@ -1,12 +1,17 @@
 # RavennaRecorder
 
-This project is using for create a device which can record audio stream from Ravenna network and save it to a file.
+Ravenna Recorder is an open-source software developed in collaboration with PureLIN and Sound Puzzle.
 
-This project is sponsored by SoundPuzzle, a company which provide audio solution for live event.
+This software enables reliable and convenient recording of AES67/Ravenna audio streams on a Linux-based platform, 
 
+making it a perfect solution for any AoIP multi-track recording applications such as broadcasting, live events, and field recording.
+
+Sound Puzzle providing funding and project oversight, while PureLIN led the development.
+
+Sound Puzzle, based in Canada, specializes in high-quality audio production and solutions for broadcasting, games, music, and system integration.
 ![SoundPuzzle Logo](./resource/soundpuzzle/SP.png)
 
-## compatibility with other AoIP protocol
+## Compatibility with other AoIP protocol
 
 Since Ravenna is compatible with AES67, this project should works with AES67 stream,but not tested yet.
 
