@@ -4,7 +4,7 @@ Ravenna Recorder is an open-source software developed in collaboration with Pure
 
 This software enables reliable and convenient recording of AES67/Ravenna audio streams on a Linux-based platform, 
 
-making it a perfect solution for any AoIP multi-track recording applications such as broadcasting, live events, and field recording.
+making it a perfect solution for Ravenna multi-track recording applications such as broadcasting, live events, and field recording.
 
 Sound Puzzle providing funding and project oversight, while PureLIN led the development.
 
@@ -13,7 +13,7 @@ Sound Puzzle, based in Canada, specializes in high-quality audio production and 
 
 ## Compatibility with other AoIP protocol
 
-Since Ravenna is compatible with AES67, this project should works with AES67 stream,but not tested yet.
+Since Ravenna is compatible with AES67, this project works with AES67 stream.
 
 The recorder only works with multicast stream now, to use with Dante, you should change the stream to multicast.
 
