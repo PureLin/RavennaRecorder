@@ -52,9 +52,7 @@ std::vector<std::string> getAvailablePath() {
             currentPaths.clear();
             currentDisk = name;
         } else if (type == "part") {
-            if (mountPoint == "/" || mountPoint.find("/boot") != std::string::npos) {
-                currentDisk = "";
-            } else if (!mountPoint.empty()) {
+            if (!mountPoint.empty() && mountPoint.find("/media/usb") != std::string::npos) {
                 if (!directoryExists(mountPoint + "/RavennaRecords")) {
                     if (mkdir((mountPoint + "/RavennaRecords").c_str(), 0777) == -1) {
                         logging("Failed to create directory %s", mountPoint.c_str());
@@ -68,13 +66,6 @@ std::vector<std::string> getAvailablePath() {
     if (!currentDisk.empty()) {
         result.insert(result.end(), currentPaths.begin(), currentPaths.end());
     }
-    if (!directoryExists(getHomeDirectory() + "/RavennaRecords")) {
-        if (mkdir((getHomeDirectory() + "/RavennaRecords").c_str(), 0777) == -1) {
-            logging("Failed to create home record directory");
-            return result;
-        }
-    }
-    result.push_back(getHomeDirectory() + "/RavennaRecords");
     return result;
 }
 
