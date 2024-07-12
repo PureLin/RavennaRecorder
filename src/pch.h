@@ -27,6 +27,7 @@
 #include <fstream>
 #include <concurrentqueue.h>
 #include <readerwriterqueue.h>
+#include <blockingconcurrentqueue.h>
 #include <sndfile.h>
 
 #endif //RAVENNAPI_PCH_H

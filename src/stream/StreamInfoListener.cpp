@@ -66,16 +66,6 @@ void setup_sdp_socket() {
     while (true) {
         sleep(2);
         ConfigData::getInstance()->availablePaths = getAvailablePath();
-        for (auto &stream: ConfigData::getInstance()->streamInfoMap) {
-            if (stream.second.lastUpdateTimestamp < time(nullptr) - 45) {
-                if (streamRecorderMap.find(stream.first) != streamRecorderMap.end()) {
-                    logging("Stream %s disconnected", stream.first.c_str());
-                    streamRecorderMap[stream.first]->stop();
-                    delete streamRecorderMap[stream.first];
-                    streamRecorderMap.erase(stream.first);
-                }
-            }
-        }
     }
 }
 
@@ -93,7 +83,9 @@ int sdp_listener_main() {
         n = recvfrom(sdp_socket, buffer, MAX_SDP_PACKET_SIZE, 0, nullptr, nullptr);
         if (n <= 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
             logging("Can't receive data from sdp socket");
-            break;
+            close(sdp_socket);
+            setup_sdp_socket();
+            continue;
         }
         bool is_sdp_removed = buffer[0] == 0x24;
         for (int i = 0; i <= n; ++i) {
@@ -140,6 +132,16 @@ int sdp_listener_main() {
                    streamRecorderMap[streamInfo.streamName]->getStreamInfo().onePacketFrameLength != streamInfo.onePacketFrameLength) {
             logging("SDP changed %s", streamInfo.streamName.c_str());
             streamRecorderMap[streamInfo.streamName]->updateStreamInfo(streamInfo);
+        }
+        for (auto &stream: ConfigData::getInstance()->streamInfoMap) {
+            if (stream.second.lastUpdateTimestamp < time(nullptr) - 180) {
+                if (streamRecorderMap.find(stream.first) != streamRecorderMap.end()) {
+                    logging("Stream %s disconnected", stream.first.c_str());
+                    streamRecorderMap[stream.first]->stop();
+                    delete streamRecorderMap[stream.first];
+                    streamRecorderMap.erase(stream.first);
+                }
+            }
         }
     }
     return 0;

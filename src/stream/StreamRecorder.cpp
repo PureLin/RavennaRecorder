@@ -60,10 +60,13 @@ void StreamRecorder::start() {
     if (recordThread.joinable()) {
         recordThread.join();
     }
+    if (writeThread.joinable()) {
+        writeThread.join();
+    }
     isRecording = true;
     inErrorState = NO_ERROR;
-    recordThread = thread(&StreamRecorder::doRecord, this);\
-
+    recordThread = thread(&StreamRecorder::doRecord, this);
+    writeThread = thread(&StreamRecorder::doWrite, this);
 }
 
 void StreamRecorder::stop() {
@@ -74,6 +77,9 @@ void StreamRecorder::stop() {
     isRecording = false;
     if (recordThread.joinable()) {
         recordThread.join();
+    }
+    if (writeThread.joinable()) {
+        writeThread.join();
     }
     if (audio_receive_socket != -1) {
         close(audio_receive_socket);
@@ -110,7 +116,7 @@ inline int convert_data(const unsigned char *webBuffer, int32_t *fileBuffer, int
 
 void StreamRecorder::doRecord() {
     unsigned char webBuffer[MAX_SDP_PACKET_SIZE];
-    int32_t fileBuffer[4096];
+    int32_t netBuffer[4096];
     ssize_t n;
     int writeCount = 0;
     uint32_t seq = UINT32_MAX;
@@ -118,12 +124,6 @@ void StreamRecorder::doRecord() {
         if (audio_receive_socket == -1) {
             setup_stream_socket();
             continue;
-        }
-        if (recordFile == nullptr) {
-            if (!openNewFile()) {
-                logging("%s: Can't open file for recording", currentStreamInfo.streamName.c_str());
-                isRecording = false;
-            }
         }
         n = recvfrom(audio_receive_socket, webBuffer, MAX_SDP_PACKET_SIZE, 0, nullptr, nullptr);
         if (n <= 0) {
@@ -143,18 +143,46 @@ void StreamRecorder::doRecord() {
             logging("%s: Warning Packet sequence changed, should be %d, but got %d, audio may dropout", currentStreamInfo.streamName.c_str(), seq, currentSeq);
         }
         seq = currentSeq;
-        int size = convert_data(webBuffer + RTP_HEADER_SIZE, fileBuffer, currentStreamInfo.onePacketFrameLength * currentStreamInfo.channelCount, currentStreamInfo.channelCount, currentStreamInfo.bitDepth, channelSelected);
+        int size = convert_data(webBuffer + RTP_HEADER_SIZE, netBuffer, currentStreamInfo.onePacketFrameLength * currentStreamInfo.channelCount, currentStreamInfo.channelCount, currentStreamInfo.bitDepth, channelSelected);
         int last_max = 0;
         for (int i = 0; i != size; ++i) {
-            if (abs(fileBuffer[i]) > last_max) {
-                last_max_value = abs(fileBuffer[i]);
+            if (abs(netBuffer[i]) > last_max) {
+                last_max_value = abs(netBuffer[i]);
             }
         }
-        sf_writef_int(recordFile, fileBuffer, currentStreamInfo.onePacketFrameLength);
-        if (++writeCount == file_write_batch) {
+        audioQueue.enqueue_bulk(netBuffer, size);
+    }
+    if (audio_receive_socket != -1) {
+        close(audio_receive_socket);
+        audio_receive_socket = -1;
+    }
+}
+
+
+void StreamRecorder::doWrite() {
+    int32_t fileBuffer[8192];
+    int oneBatchSampleCount = min(8192, currentStreamInfo.onePacketFrameLength * currentStreamInfo.channelCount * 16);
+    int remainSample = 0;
+    int writeFrameCount = 0;
+    while (isRecording && inErrorState == NO_ERROR) {
+        if (recordFile == nullptr) {
+            if (!openNewFile()) {
+                logging("%s: Can't open file for recording", currentStreamInfo.streamName.c_str());
+                isRecording = false;
+            }
+        }
+        int readDataSize = (int) audioQueue.wait_dequeue_bulk_timed(fileBuffer + remainSample, oneBatchSampleCount, std::chrono::milliseconds(10));
+        int writeFrame = readDataSize / currentStreamInfo.channelCount;
+        sf_writef_int(recordFile, fileBuffer, writeFrame);
+        remainSample = readDataSize % currentStreamInfo.channelCount;
+        if (remainSample > 0) {
+            memcpy(fileBuffer, fileBuffer + writeFrame * currentStreamInfo.channelCount, remainSample * sizeof(int32_t));
+        }
+        writeFrameCount += writeFrame;
+        if (writeFrameCount >= file_write_batch) {
             logging("%s: Record time limit reached, will open new file.", currentStreamInfo.streamName.c_str());
             closeRecordFile();
-            writeCount = 0;
+            writeFrameCount = 0;
         }
         if (needSlice) {
             logging("%s: Slicing file", currentStreamInfo.streamName.c_str());
@@ -163,11 +191,8 @@ void StreamRecorder::doRecord() {
         }
     }
     closeRecordFile();
-    if (audio_receive_socket != -1) {
-        close(audio_receive_socket);
-        audio_receive_socket = -1;
-    }
 }
+
 
 void StreamRecorder::setup_stream_socket() {
     if (audio_receive_socket != -1) {
@@ -233,7 +258,7 @@ string StreamRecorder::getState() const {
 bool StreamRecorder::openNewFile() {
     string streamNameSanitized = sanitizeFilePath(currentStreamInfo.streamName);
     recordPath = ConfigData::getInstance()->currentRecordPath + "/" + streamNameSanitized;
-    file_write_batch = ConfigData::getInstance()->splitTimeInMinutes * 60 * currentStreamInfo.sampleRate / currentStreamInfo.onePacketFrameLength;
+    file_write_batch = ConfigData::getInstance()->splitTimeInMinutes * 60 * currentStreamInfo.sampleRate;
     if (mkdir(recordPath.c_str(), 0777) == -1) {
         if (errno != EEXIST) {
             logging("%s mkdir %s failed: %s", streamNameSanitized.c_str(), recordPath.c_str(), strerror(errno));
@@ -265,6 +290,9 @@ StreamRecorder::~StreamRecorder() {
     stop();
     if (recordThread.joinable()) {
         recordThread.join();
+    }
+    if (writeThread.joinable()) {
+        writeThread.join();
     }
     if (audio_receive_socket != -1) {
         close(audio_receive_socket);
@@ -312,4 +340,3 @@ string StreamRecorder::getChannelSelected() {
     }
     return result.str();
 }
-

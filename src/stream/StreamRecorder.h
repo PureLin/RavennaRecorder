@@ -19,6 +19,7 @@ enum ErrorState {
     FILE_ERROR,
     PATH_ERROR
 };
+using namespace moodycamel;
 
 class StreamRecorder {
 public:
@@ -50,11 +51,14 @@ private:
     bool channelSelected[MAX_RECORD_CHANNELS];
     std::atomic<bool> needSlice = false;
     std::atomic<int32_t> last_max_value = 0;
+    BlockingConcurrentQueue<int32_t> audioQueue{};
+
     stream_info currentStreamInfo;
     bool isRecording = false;
     ErrorState inErrorState = NO_ERROR;
     string recordPath;
     thread recordThread;
+    thread writeThread;
     int audio_receive_socket;
     int packet_size;
     int file_write_batch;
@@ -67,6 +71,8 @@ private:
     void setup_stream_socket();
 
     void doRecord();
+
+    void doWrite();
 
     void closeRecordFile();
 };

@@ -66,6 +66,7 @@ std::vector<std::string> getAvailablePath() {
     if (!currentDisk.empty()) {
         result.insert(result.end(), currentPaths.begin(), currentPaths.end());
     }
+    result.push_back(getHomeDirectory() + "/RavennaRecords");
     return result;
 }
 
