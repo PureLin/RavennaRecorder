@@ -9,10 +9,12 @@
 
 std::string getHomeDirectory();
 
+bool directoryExists(const std::string &dirPath);
+
 std::string getCurrentTime();
 
 std::vector<std::string> getAvailablePath();
 
-std::string sanitizeFilePath(const std::string& input);
+std::string sanitizeFilePath(const std::string &input);
 
 #endif //RAVENNARECORDER_COMMON_H

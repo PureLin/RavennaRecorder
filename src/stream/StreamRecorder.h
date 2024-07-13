@@ -47,6 +47,8 @@ public:
 
     string getChannelSelected();
 
+    string getErrorMessage();
+
 private:
     bool channelSelected[MAX_RECORD_CHANNELS];
     std::atomic<bool> needSlice = false;
@@ -67,6 +69,9 @@ private:
     SF_INFO recordInfo{};
     SNDFILE *recordFile{};
     int32_t *fileBuffer;
+
+    bool networkFrameSkipping = false;
+    bool bufferTooMuchData = false;
 
     void calculateRecordConfigs();
 

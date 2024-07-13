@@ -79,7 +79,9 @@ void ConfigData::save_config() {
     json j;
     j["startRecordImmediately"] = startRecordImmediately;
     j["splitTimeInMinutes"] = splitTimeInMinutes;
-    j["defaultRecordPath"] = defaultRecordPath;
+    if (!currentRecordPath.empty()) {
+        j["defaultRecordPath"] = currentRecordPath;
+    }
     j["configPassword"] = configPassword;
     j["enableSaveToHomeDir"] = enableSaveToHomeDir;
     j["fileWriteIntervalInMs"] = fileWriteIntervalInMs;

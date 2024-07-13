@@ -68,6 +68,13 @@ void websocket_server::on_message(const websocketpp::connection_hdl &hdl, const 
                 ConfigData::getInstance()->splitTimeInMinutes = i;
             }
         }
+        if (j["write_interval_in_ms"] != nullptr) {
+            string s = j["write_interval_in_ms"];
+            int i = stoi(s);
+            if (i > 0 && i < 1000) {
+                ConfigData::getInstance()->fileWriteIntervalInMs = i;
+            }
+        }
         if (j["start_immediately"] != nullptr) {
             ConfigData::getInstance()->startRecordImmediately = j["start_immediately"];
         }
@@ -170,12 +177,14 @@ void websocket_server::do_one_broadcast() {
         m["status"] = s.second->getState();
         m["file_name"] = s.second->getCurrentFileName();
         m["channel_selected"] = s.second->getChannelSelected();
+        m["error_msg"]=s.second->getErrorMessage();
         streamList.push_back(m);
     }
     j["stream_list"] = streamList;
     j["available_path"] = ConfigData::getInstance()->availablePaths;
     j["folder"] = ConfigData::getInstance()->currentRecordPath;
     j["split_time_minute"] = ConfigData::getInstance()->splitTimeInMinutes;
+    j["write_interval_in_ms"] = ConfigData::getInstance()->fileWriteIntervalInMs;
     j["start_immediately"] = ConfigData::getInstance()->startRecordImmediately;
     j["time"] = time(nullptr);
     string s = j.dump();

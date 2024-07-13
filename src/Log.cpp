@@ -33,7 +33,15 @@ void logging(const char *message, ...) {
 }
 
 void open_log_file() {
-    log_file = fopen((getHomeDirectory() + "/Recorder.log").c_str(), "a");
+    time_t now = time(NULL);
+    struct tm *local_time = localtime(&now);
+    char time_string[80];
+    strftime(time_string, sizeof(time_string), "%Y_%m_%d_%H_%M_%S", local_time);
+    std::string logPath = getHomeDirectory() + "/Logs";
+    if (!directoryExists(logPath)) {
+        mkdir((logPath).c_str(), 0777);
+    }
+    log_file = fopen((logPath + "/Recorder" + time_string + ".log").c_str(), "a");
     if (log_file == nullptr) {
         printf("Can't open log file, will output to stdout\n");
     } else {
@@ -41,7 +49,6 @@ void open_log_file() {
         struct tm *local_time = localtime(&now);
         char time_string[80];
         strftime(time_string, sizeof(time_string), "%Y-%m-%d %H:%M:%S", local_time);
-        fprintf(log_file, "\n\n\n\n");
         logging("Start RavennaRecorder");
     }
 }

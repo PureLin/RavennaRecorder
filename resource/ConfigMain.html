@@ -52,11 +52,11 @@
 
     function getColor(status) {
         if (status === "Recording") {
-            return "red";
+            return 'style="color: red"';
         } else if (status === "Error") {
-            return "blue";
+            return 'style="color: blue"';
         } else {
-            return "black";
+            return '';
         }
     }
 
@@ -144,6 +144,14 @@
         return `<input type="checkbox" id="checkbox${index}" ${channel_mask[index] === '1' ? "checked" : ""}  ${recording ? "disabled" : ""} onclick="changeChannelSelected(${stream_id},${index},this.checked)" title="ch${index}">`
     }
 
+    function getStyle(status, error_msg) {
+        if (status === "Error") {
+            return 'style="color: red"';
+        } else {
+            return error_msg ? 'style="color: blue"' : '';
+        }
+    }
+
     function wsmessage(evt) {
         const received_msg = JSON.parse(evt.data);
         switch (received_msg.type) {
@@ -162,13 +170,17 @@
             `;
                 for (let i = 0; i < received_msg.stream_list.length; i++) {
                     const stream = received_msg.stream_list[i];
-                    const color = getColor(stream.status);
                     let row = table.rows[i + 1];
                     if (!row) {
                         row = table.insertRow(-1);
                     }
                     row.innerHTML = `
-                    <td>${stream.stream_name}</td>
+                    <td>
+                            <span ${getColor(stream.status)}>${stream.stream_name}</span>
+                            ${stream.error_msg ? `<div class="tooltip" ${getStyle(stream.status, stream.error_msg)}> ℹ
+                                                       <span class="tooltiptext">${stream.error_msg}</span>
+                                                  </div>` : ''}
+                    </td>
                     <td>${stream.source_ip}</td>
                     <td>${stream.sample_rate / 1000}KHz*${stream.channel_count}ch@${stream.bit_depth}bit</td>
                     <td>${stream.file_name ? stream.file_name : "----------------------------"}</td>
@@ -181,7 +193,6 @@
                         <button style="margin: 10px" onclick=sliceStream(${i}) ${stream.status === "Recording" ? '' : 'disabled'}>SliceFile</button>
                     </td>
                 `;
-                    row.cells[0].style.color = color;
                 }
                 document.getElementById("folder_list").innerHTML = "";
                 let folder_list = received_msg.available_path;
@@ -196,6 +207,7 @@
                 }
                 document.getElementById("split_time_minute").value = received_msg.split_time_minute;
                 document.getElementById("start_immediately").checked = received_msg.start_immediately;
+                document.getElementById("write_interval_in_ms").value = received_msg.write_interval_in_ms;
                 break;
             default:
                 console.log(evt.data);
@@ -288,6 +300,33 @@
         margin: 10px;
     }
 
+    .tooltip {
+        margin-left: 10px;
+        position: relative;
+        display: inline-block;
+    }
+
+    .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 400px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        padding: 5px 0;
+        border-radius: 6px;
+        position: absolute;
+        z-index: 1;
+        bottom: 100%;
+        left: 50%;
+        margin-left: 0;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+    }
 </style>
 
 <body>
@@ -322,6 +361,26 @@
         <input type="number" id="split_time_minute" onchange="changeSettings({split_time_minute:this.value})"
                style="width: 50px" max="60" min="1">
         <label for="split_time_minute">Minutes</label>
+        <div class="tooltip"> ℹ
+            <span class="tooltiptext">Auto create a new file when current record reach this time. You can also create new file by click the "SliceFile" button</span>
+        </div>
+    </div>
+    <div class="section">
+        <label for="write_interval_in_ms" style="margin:0 20px">File Write Interval</label>
+        <select id="write_interval_in_ms" onchange="changeSettings({split_time_minute:this.value})"
+                style="width: 80px">
+            <option value="1">1</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="100" selected>100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+        </select>
+        <label for="write_interval_in_ms">ms</label>
+        <div class="tooltip" style="margin:0 20px"> ℹ
+            <span class="tooltiptext">Flush file after received audio length reach this limit. increase this value can reduce storage stress, but will increase little action(start,stop and slice) latency.</span>
+        </div>
     </div>
     <div class="section">
         <label for="start_immediately" style="margin:0 20px">Start immediately when get new stream info</label>

@@ -50,7 +50,7 @@ void StreamRecorder::calculateRecordConfigs() {
         inErrorState = STREAM_FORMAT_ERROR;
         logging("%s Unsupported bit depth %d", currentStreamInfo.streamName.c_str(), currentStreamInfo.bitDepth);
     }
-    int oneWriteFrameCount = currentStreamInfo.sampleRate / 1000 * ConfigData::getInstance()->fileWriteIntervalInMs;
+    int oneWriteFrameCount = currentStreamInfo.sampleRate * ConfigData::getInstance()->fileWriteIntervalInMs / 1000;
     oneWriteBatchSampleCount = max(oneWriteFrameCount, currentStreamInfo.onePacketFrameLength) * currentStreamInfo.channelCount;
     logging("%s packet size %d", currentStreamInfo.streamName.c_str(), packet_size);
     logging("%s oneWriteBatchSampleCount %d %d", currentStreamInfo.streamName.c_str(), oneWriteFrameCount, oneWriteBatchSampleCount);
@@ -122,7 +122,6 @@ void StreamRecorder::doRecord() {
     unsigned char webBuffer[MAX_SDP_PACKET_SIZE];
     int32_t netBuffer[4096];
     ssize_t n;
-    int writeCount = 0;
     uint32_t seq = UINT32_MAX;
     while (isRecording && inErrorState == NO_ERROR) {
         if (audio_receive_socket == -1) {
@@ -145,6 +144,7 @@ void StreamRecorder::doRecord() {
         uint32_t currentSeq = (webBuffer[2] << 8) | webBuffer[3];
         if (uint16_t(seq + 1) != currentSeq && seq != UINT32_MAX) {
             logging("%s: Warning Packet sequence changed, should be %d, but got %d, audio may dropout", currentStreamInfo.streamName.c_str(), seq, currentSeq);
+            networkFrameSkipping = true;
         }
         seq = currentSeq;
         int size = convert_data(webBuffer + RTP_HEADER_SIZE, netBuffer, currentStreamInfo.onePacketFrameLength * currentStreamInfo.channelCount, currentStreamInfo.channelCount, currentStreamInfo.bitDepth, channelSelected);
@@ -175,6 +175,9 @@ void StreamRecorder::doWrite() {
             }
         }
         int actualSampleCount = (int) audioQueue.wait_dequeue_bulk_timed(fileBuffer + remainSample, oneWriteBatchSampleCount, std::chrono::milliseconds(sleepTime));
+        if (audioQueue.size_approx() > (oneWriteBatchSampleCount * 128)) {
+            bufferTooMuchData = true;
+        }
         int writeFrame = actualSampleCount / currentStreamInfo.channelCount;
         sf_writef_int(recordFile, fileBuffer, writeFrame);
         remainSample = actualSampleCount % currentStreamInfo.channelCount;
@@ -345,4 +348,33 @@ string StreamRecorder::getChannelSelected() {
         result.sputn(channelSelected[i] ? "1" : "0", 1);
     }
     return result.str();
+}
+
+string StreamRecorder::getErrorMessage() {
+    if (ErrorState::NO_ERROR != inErrorState) {
+        switch (inErrorState) {
+            case STREAM_FORMAT_ERROR:
+                return "Error:Unsupported bit depth";
+            case SOCKET_ERROR:
+                return "Error:Receive data failed, check your network connection";
+            case STREAM_CHANGE_ERROR:
+                return "Error:Input data format mismatched, does your stream config changed?";
+            case PATH_ERROR:
+            case FILE_ERROR:
+                return "Error:Can't create recording file, check your storage";
+            default:
+                break;
+        }
+    }
+    if (networkFrameSkipping || bufferTooMuchData) {
+        string result = "Warning:";
+        if (networkFrameSkipping) {
+            result += "Some audio packet dropped, will have pop sound in record file.  ";
+        }
+        if (bufferTooMuchData) {
+            result += "File writing is slow, try to increase 'File Write Interval' or use a faster storage device.";
+        }
+        return result;
+    }
+    return std::string();
 }
