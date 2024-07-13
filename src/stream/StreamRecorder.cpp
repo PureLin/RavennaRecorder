@@ -50,7 +50,11 @@ void StreamRecorder::calculateRecordConfigs() {
         inErrorState = STREAM_FORMAT_ERROR;
         logging("%s Unsupported bit depth %d", currentStreamInfo.streamName.c_str(), currentStreamInfo.bitDepth);
     }
+    int oneWriteFrameCount = currentStreamInfo.sampleRate / 1000 * ConfigData::getInstance()->fileWriteIntervalInMs;
+    oneWriteBatchSampleCount = max(oneWriteFrameCount, currentStreamInfo.onePacketFrameLength) * currentStreamInfo.channelCount;
     logging("%s packet size %d", currentStreamInfo.streamName.c_str(), packet_size);
+    logging("%s oneWriteBatchSampleCount %d %d", currentStreamInfo.streamName.c_str(), oneWriteFrameCount, oneWriteBatchSampleCount);
+    fileBuffer = new int32_t[oneWriteBatchSampleCount];
 }
 
 void StreamRecorder::start() {
@@ -160,10 +164,9 @@ void StreamRecorder::doRecord() {
 
 
 void StreamRecorder::doWrite() {
-    int32_t fileBuffer[8192];
-    int oneBatchSampleCount = min(8192, currentStreamInfo.onePacketFrameLength * currentStreamInfo.channelCount * 16);
     int remainSample = 0;
     int writeFrameCount = 0;
+    int sleepTime = ConfigData::getInstance()->fileWriteIntervalInMs;
     while (isRecording && inErrorState == NO_ERROR) {
         if (recordFile == nullptr) {
             if (!openNewFile()) {
@@ -171,10 +174,10 @@ void StreamRecorder::doWrite() {
                 isRecording = false;
             }
         }
-        int readDataSize = (int) audioQueue.wait_dequeue_bulk_timed(fileBuffer + remainSample, oneBatchSampleCount, std::chrono::milliseconds(10));
-        int writeFrame = readDataSize / currentStreamInfo.channelCount;
+        int actualSampleCount = (int) audioQueue.wait_dequeue_bulk_timed(fileBuffer + remainSample, oneWriteBatchSampleCount, std::chrono::milliseconds(sleepTime));
+        int writeFrame = actualSampleCount / currentStreamInfo.channelCount;
         sf_writef_int(recordFile, fileBuffer, writeFrame);
-        remainSample = readDataSize % currentStreamInfo.channelCount;
+        remainSample = actualSampleCount % currentStreamInfo.channelCount;
         if (remainSample > 0) {
             memcpy(fileBuffer, fileBuffer + writeFrame * currentStreamInfo.channelCount, remainSample * sizeof(int32_t));
         }
@@ -299,6 +302,9 @@ StreamRecorder::~StreamRecorder() {
         audio_receive_socket = -1;
     }
     closeRecordFile();
+    if (fileBuffer != nullptr) {
+        delete[] fileBuffer;
+    }
 }
 
 void StreamRecorder::slice() {

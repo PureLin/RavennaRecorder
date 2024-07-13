@@ -3,6 +3,7 @@
 //
 #include "common.h"
 #include "Log.h"
+#include "ConfigData.h"
 
 using namespace std;
 
@@ -66,7 +67,9 @@ std::vector<std::string> getAvailablePath() {
     if (!currentDisk.empty()) {
         result.insert(result.end(), currentPaths.begin(), currentPaths.end());
     }
-    result.push_back(getHomeDirectory() + "/RavennaRecords");
+    if (ConfigData::getInstance()->enableSaveToHomeDir) {
+        result.push_back(getHomeDirectory() + "/RavennaRecords");
+    }
     return result;
 }
 

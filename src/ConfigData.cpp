@@ -16,8 +16,16 @@ ConfigData *ConfigData::getInstance() {
 void ConfigData::read_config() {
     availablePaths = getAvailablePath();
     startRecordImmediately = false;
+    enableSaveToHomeDir = false;
+    fileWriteIntervalInMs = 100;
+    httpServerPort = 80;
     splitTimeInMinutes = 60;
-    defaultRecordPath = currentRecordPath = ConfigData::getInstance()->availablePaths[0];
+    if (availablePaths.empty()) {
+        logging("No available path found");
+        defaultRecordPath = currentRecordPath = "";
+    } else {
+        defaultRecordPath = currentRecordPath = ConfigData::getInstance()->availablePaths[0];
+    }
 
     std::ifstream t(getHomeDirectory() + "/RecorderConfig.json");
     std::string str((std::istreambuf_iterator<char>(t)),
@@ -47,6 +55,18 @@ void ConfigData::read_config() {
         if (j.contains("configPassword")) {
             configPassword = j["configPassword"];
         }
+        if (j.contains("enableSaveToHomeDir")) {
+            enableSaveToHomeDir = j["enableSaveToHomeDir"];
+        }
+        if (j.contains("fileWriteIntervalInMs")) {
+            fileWriteIntervalInMs = j["fileWriteIntervalInMs"];
+            if (fileWriteIntervalInMs < 1) {
+                fileWriteIntervalInMs = 1;
+            }
+        }
+        if (j.contains("httpServerPort")) {
+            httpServerPort = j["httpServerPort"];
+        }
     } catch (json::parse_error &e) {
         logging("parse error: %s", e.what());
     }
@@ -61,6 +81,9 @@ void ConfigData::save_config() {
     j["splitTimeInMinutes"] = splitTimeInMinutes;
     j["defaultRecordPath"] = defaultRecordPath;
     j["configPassword"] = configPassword;
+    j["enableSaveToHomeDir"] = enableSaveToHomeDir;
+    j["fileWriteIntervalInMs"] = fileWriteIntervalInMs;
+    j["httpServerPort"] = httpServerPort;
     std::string s = j.dump(2);
     fp = fopen((getHomeDirectory() + "/RecorderConfig.json").c_str(), "w");
     if (fp == nullptr) {

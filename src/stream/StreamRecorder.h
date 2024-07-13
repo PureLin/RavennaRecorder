@@ -63,8 +63,10 @@ private:
     int packet_size;
     int file_write_batch;
     string currentFileName;
+    int oneWriteBatchSampleCount;
     SF_INFO recordInfo{};
     SNDFILE *recordFile{};
+    int32_t *fileBuffer;
 
     void calculateRecordConfigs();
 
