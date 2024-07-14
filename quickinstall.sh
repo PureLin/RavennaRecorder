@@ -14,6 +14,8 @@ fi
 sudo apt-get update
 sudo apt install git
 
+cd ~
+
 echo "clone the project\n"
 
 if [ -d "RavennaRecorder" ]; then
