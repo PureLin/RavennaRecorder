@@ -84,7 +84,5 @@ sudo systemctl daemon-reload
 sudo systemctl enable RavennaRecorder
 sudo systemctl start RavennaRecorder
 
-echo "\n----Installation complete----\n service status:\n"
-sudo systemctl status RavennaRecorder
-
+echo "\n----Installation complete----\n"
 echo "\n----You can reboot the system to check if the service starts automatically.----"

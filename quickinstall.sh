@@ -1,12 +1,12 @@
 
 device_ips=$(ip addr show | grep 'inet ' | awk '{print $2}')
 
-if echo "$device_ips" | grep -q "169.254"; then
-  echo "Get git \n"
+if echo  -e "$device_ips" | grep -q "169.254"; then
+  echo  -e "\n----Get git----\n"
 else
-  echo "Please config your network to link-local address (169.254.x.x) before run this install script\n"
-  echo "Please config your network to link-local address (169.254.x.x) before run this install script\n"
-  echo "Please config your network to link-local address (169.254.x.x) before run this install script\n"
+  echo -e "Please config your network to link-local address (169.254.x.x) before run this install script\n"
+  echo -e "Please config your network to link-local address (169.254.x.x) before run this install script\n"
+  echo -e "Please config your network to link-local address (169.254.x.x) before run this install script\n"
   exit 1
 fi
 
@@ -15,17 +15,15 @@ sudo apt install git
 
 cd ~
 
-echo "\n----clone the project----\n"
+echo -e "\n----clone the project----\n"
 
 if [ -d "RavennaRecorder" ]; then
-    echo "\n----Old version of project found, remove it----\n"
+    echo -e "\n----Old version of project found, remove it----\n"
     rm -rf RavennaRecorder
 fi
 git clone https://github.com/PureLin/RavennaRecorder.git RavennaRecorder
 cd RavennaRecorder
 
-echo "make install script executable\n"
+echo -e  "\n----run install script----\n"
 sudo chmod +x install.sh
-
-echo "run install script\n"
 sudo -E ./install.sh soundpuzzle
