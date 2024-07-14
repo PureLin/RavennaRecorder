@@ -43,7 +43,7 @@ Recommend two options:
 ### Running the installation script
 After you have all above setup, you can install RavennaRecorder by the following command in terminal:
 
-      curl -sL https://raw.githubusercontent.com/PureLin/RavennaRecorder/quickInstall/quickInstall.sh | sudo -E bash
+      curl -sL https://raw.githubusercontent.com/PureLin/RavennaRecorder/master/quickinstall.sh | sudo -E bash
 
 ### Check the installation
 If everything works fine, you should open the browser and type `http://<device_ip>` to access the web interface.
