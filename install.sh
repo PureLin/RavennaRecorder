@@ -1,10 +1,9 @@
-echo "Get dependencies libs and build tools\n"
+echo "----Get dependencies libs and build tools----\n"
 
-sudo apt-get update
 sudo apt install cmake build-essential libsndfile1 libsndfile1-dev libboost-all-dev htop net-tools debhelper devscripts lockfile-progs exfat-fuse exfatprogs hfsplus hfsprogs -y
 
 if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
-  echo "Old version of service found, remove it\n"
+  echo "\n----Old version of service found, remove it----\n"
   sudo systemctl stop RavennaRecorder.service
   sudo systemctl disable RavennaRecorder.service
   sudo rm /etc/systemd/system/RavennaRecorder.service
@@ -13,7 +12,7 @@ if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
 fi
 
 if ! dpkg -l | grep -qw usbmount; then
-    echo "\nInstall usbmount\n"
+    echo "\n----Install usbmount----\n"
     set -e
     git clone https://github.com/rbrito/usbmount.git
     cd usbmount
@@ -21,10 +20,10 @@ if ! dpkg -l | grep -qw usbmount; then
     sudo dpkg -i ../usbmount_*.deb
     cd ..
 else
-    echo "\nusbmount already installed\n"
+    echo "\n----usbmount already installed----\n"
 fi
 
-echo "\nCreate usbmount config\n"
+echo "\n----Create usbmount config----\n"
 if [ -f "/etc/usbmount/usbmount.conf" ]; then
     sudo rm /etc/usbmount/usbmount.conf
 fi
@@ -39,7 +38,7 @@ echo "FS_MOUNTOPTIONS=\"\"" | sudo tee -a /etc/usbmount/usbmount.conf
 echo "" | sudo tee -a /etc/usbmount/usbmount.conf
 echo "VERBOSE=no" | sudo tee -a /etc/usbmount/usbmount.conf
 
-echo "\nBuild the project\n"
+echo "\n----Build the project----\n"
 
 rm -rf build
 mkdir build
@@ -47,14 +46,14 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j4
 
-echo "\nCopy build result\n"
+echo "\n----Copy build result----\n"
 cp RavennaRecorder /usr/local/bin
 cd ..
 
-echo "\nCopy config page\n"
+echo "\n----Copy config page----\n"
 cd resource
 if [ "$1" = "soundpuzzle" ]; then
-    echo "Use SoundPuzzle config page."
+    echo "\n----Use SoundPuzzle config page.----\n"
     cd soundpuzzle
 fi
 cp ConfigMain.html $HOME/ConfigMain.html
@@ -63,7 +62,7 @@ if [ "$1" = "soundpuzzle" ]; then
     cd ..
 fi
 
-echo "\nCreate service\n"
+echo "\n----Create service----\n"
 
 echo "[Unit]" | sudo tee /etc/systemd/system/RavennaRecorder.service
 echo "Description=RavennaRecorder" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
@@ -80,12 +79,12 @@ echo "" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
 echo "[Install]" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
 echo "WantedBy=multi-user.target" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
 
-echo "\nStart service\n"
+echo "\n----Start service----\n"
 sudo systemctl daemon-reload
 sudo systemctl enable RavennaRecorder
 sudo systemctl start RavennaRecorder
 
-echo "\nInstallation complete, service status:\n"
+echo "\n----Installation complete----\n service status:\n"
 sudo systemctl status RavennaRecorder
 
-echo "\nYou can reboot the system to check if the service starts automatically."
+echo "\n----You can reboot the system to check if the service starts automatically.----"
