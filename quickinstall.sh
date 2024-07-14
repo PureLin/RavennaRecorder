@@ -3,7 +3,7 @@ device_ips=$(ip addr show | grep 'inet ' | awk '{print $2}')
 
 # 检查是否包含特定的IP地址或地址段
 if echo "$device_ips" | grep -q "169.254"; then
-  echo "Get git\n"
+  echo "Get git \n"
 else
   echo "Please config your network to link-local address (169.254.x.x) before run this install script\n"
   echo "Please config your network to link-local address (169.254.x.x) before run this install script\n"
@@ -16,10 +16,10 @@ sudo apt install git
 
 cd ~
 
-echo "clone the project\n"
+echo "\n----clone the project----\n"
 
 if [ -d "RavennaRecorder" ]; then
-    echo "Old version of project found, remove it\n"
+    echo "\n----Old version of project found, remove it----\n"
     rm -rf RavennaRecorder
 fi
 git clone https://github.com/PureLin/RavennaRecorder.git RavennaRecorder
