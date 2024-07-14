@@ -41,13 +41,9 @@ Recommend two options:
    **Important:On newer system, you should make this ethernet port with "Link-Local" IPv4 mode, you can set it by using nmtui or in GUI.**
 
 ### Running the installation script
-After you have all above setup, you can install RavennaRecorder by the following steps in terminal:
+After you have all above setup, you can install RavennaRecorder by the following command in terminal:
 
-    1. Install git by `sudo apt install git`
-    2. Get the code from git repo: `git clone https://github.com/PureLin/RavennaRecorder.git`
-    3. Switch to the directory: `cd RavennaRecorder` and make the script executable: `sudo chmod +x install.sh`
-    4. Run the installation script: `sudo -E ./install.sh` (if you want to use a SoundPuzzle logo version UI, add "soundpuzzle" to the params: `sudo -E ./install.sh "soundpuzzle"` )
-    5. After install finished, you can check the status by `sudo systemctl status RavennaRecorder`
+      curl -sL https://raw.githubusercontent.com/PureLin/RavennaRecorder/quickInstall/quickInstall.sh | sudo -E bash
 
 ### Check the installation
 If everything works fine, you should open the browser and type `http://<device_ip>` to access the web interface.

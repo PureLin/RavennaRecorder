@@ -3,13 +3,26 @@ echo "Get dependencies libs and build tools\n"
 sudo apt-get update
 sudo apt install cmake build-essential libsndfile1 libsndfile1-dev libboost-all-dev htop net-tools debhelper devscripts lockfile-progs exfat-fuse exfatprogs hfsplus hfsprogs -y
 
-echo "\nInstall usbmount\n"
-set -e
-git clone https://github.com/rbrito/usbmount.git
-cd usbmount
-sudo dpkg-buildpackage -us -uc -b
-sudo dpkg -i ../usbmount_*.deb
-cd ..
+if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
+  echo "Old version of service found, remove it\n"
+  sudo systemctl stop RavennaRecorder.service
+  sudo systemctl disable RavennaRecorder.service
+  sudo rm /etc/systemd/system/RavennaRecorder.service
+  sudo systemctl daemon-reload
+  sudo rm /usr/local/bin/RavennaRecorder
+fi
+
+if ! dpkg -l | grep -qw usbmount; then
+    echo "\nInstall usbmount\n"
+    set -e
+    git clone https://github.com/rbrito/usbmount.git
+    cd usbmount
+    sudo dpkg-buildpackage -us -uc -b
+    sudo dpkg -i ../usbmount_*.deb
+    cd ..
+else
+    echo "\nusbmount already installed\n"
+fi
 
 echo "\nCreate usbmount config\n"
 if [ -f "/etc/usbmount/usbmount.conf" ]; then
@@ -28,6 +41,7 @@ echo "VERBOSE=no" | sudo tee -a /etc/usbmount/usbmount.conf
 
 echo "\nBuild the project\n"
 
+rm -rf build
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -51,9 +65,6 @@ fi
 
 echo "\nCreate service\n"
 
-if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
-    sudo rm /etc/systemd/system/RavennaRecorder.service
-fi
 echo "[Unit]" | sudo tee /etc/systemd/system/RavennaRecorder.service
 echo "Description=RavennaRecorder" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
 echo "After=network.target" | sudo tee -a /etc/systemd/system/RavennaRecorder.service
