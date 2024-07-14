@@ -130,6 +130,9 @@
         if (settings.start_immediately != null) {
             cmd.start_immediately = settings.start_immediately;
         }
+        if (settings.write_interval_in_ms) {
+            cmd.write_interval_in_ms = settings.write_interval_in_ms;
+        }
         ws.send(JSON.stringify(cmd));
     }
 
@@ -371,7 +374,7 @@
     </div>
     <div class="section">
         <label for="write_interval_in_ms" style="margin:0 20px">File Write Interval</label>
-        <select id="write_interval_in_ms" onchange="changeSettings({split_time_minute:this.value})"
+        <select id="write_interval_in_ms" onchange="changeSettings({write_interval_in_ms:this.value})"
                 style="width: 80px">
             <option value="1">1</option>
             <option value="5">5</option>
