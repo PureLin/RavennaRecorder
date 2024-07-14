@@ -1,7 +1,6 @@
 
 device_ips=$(ip addr show | grep 'inet ' | awk '{print $2}')
 
-# 检查是否包含特定的IP地址或地址段
 if echo "$device_ips" | grep -q "169.254"; then
   echo "Get git \n"
 else
