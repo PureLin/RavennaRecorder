@@ -20,17 +20,12 @@ void ConfigData::read_config() {
     fileWriteIntervalInMs = 100;
     httpServerPort = 80;
     splitTimeInMinutes = 60;
-    if (availablePaths.empty()) {
-        logging("No available path found");
-        defaultRecordPath = currentRecordPath = "";
-    } else {
-        defaultRecordPath = currentRecordPath = ConfigData::getInstance()->availablePaths[0];
-    }
 
     std::ifstream t(getHomeDirectory() + "/RecorderConfig.json");
     std::string str((std::istreambuf_iterator<char>(t)),
                     std::istreambuf_iterator<char>());
     if (str.empty()) {
+        logging("Config file is empty, use default config");
         t.close();
         save_config();
         return;
@@ -42,15 +37,6 @@ void ConfigData::read_config() {
         }
         if (j.contains("splitTimeInMinutes")) {
             splitTimeInMinutes = j["splitTimeInMinutes"];
-        }
-        if (j.contains("defaultRecordPath")) {
-            defaultRecordPath = j["defaultRecordPath"];
-        }
-        if (!std::filesystem::exists(defaultRecordPath)) {
-            logging("defaultRecordPath %s not found in availablePaths, will use first available path %s", defaultRecordPath.c_str(), currentRecordPath.c_str());
-        } else {
-            currentRecordPath = defaultRecordPath;
-            logging("defaultRecordPath %s found, will use it", defaultRecordPath.c_str());
         }
         if (j.contains("configPassword")) {
             configPassword = j["configPassword"];

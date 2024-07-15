@@ -68,7 +68,16 @@ std::vector<std::string> getAvailablePath() {
         result.insert(result.end(), currentPaths.begin(), currentPaths.end());
     }
     if (ConfigData::getInstance()->enableSaveToHomeDir) {
-        result.push_back(getHomeDirectory() + "/RavennaRecords");
+        string homeDir = getHomeDirectory() + "/RavennaRecords";
+        if (!directoryExists(homeDir)) {
+            if (mkdir((homeDir).c_str(), 0777) == -1) {
+                logging("Failed to create home directory");
+            }
+        }
+        result.push_back(homeDir);
+    }
+    if (ConfigData::getInstance()->currentRecordPath.empty() && !result.empty()) {
+        ConfigData::getInstance()->currentRecordPath = result[0];
     }
     return result;
 }

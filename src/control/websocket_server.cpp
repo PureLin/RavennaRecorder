@@ -71,7 +71,7 @@ void websocket_server::on_message(const websocketpp::connection_hdl &hdl, const 
         if (j["write_interval_in_ms"] != nullptr) {
             string s = j["write_interval_in_ms"];
             int i = stoi(s);
-            if (i > 0 && i <= 1000) {
+            if (i >= 100 && i <= 1000) {
                 ConfigData::getInstance()->fileWriteIntervalInMs = i;
             }
         }

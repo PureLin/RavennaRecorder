@@ -69,6 +69,7 @@ private:
     SF_INFO recordInfo{};
     SNDFILE *recordFile{};
     int32_t *fileBuffer;
+    int lastWriteDurationInMs = 0;
 
     bool networkFrameSkipping = false;
     bool bufferTooMuchData = false;

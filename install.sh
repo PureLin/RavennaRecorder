@@ -1,6 +1,6 @@
 echo "----Get dependencies libs and build tools----\n"
 
-sudo apt install cmake build-essential libsndfile1 libsndfile1-dev libboost-all-dev htop net-tools debhelper devscripts lockfile-progs exfat-fuse exfatprogs hfsplus hfsprogs -y
+sudo apt install cmake build-essential libsndfile1 libsndfile1-dev libboost-all-dev htop net-tools debhelper devscripts lockfile-progs -y
 
 if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
   echo "\n----Old version of service found, remove it----\n"
@@ -31,7 +31,7 @@ echo "ENABLED=1" | sudo tee /etc/usbmount/usbmount.conf
 echo "" | sudo tee -a /etc/usbmount/usbmount.conf
 echo "MOUNTPOINTS=\"/media/usb0 /media/usb1 /media/usb2 /media/usb3 /media/usb4 /media/usb5 /media/usb6 /media/usb7\"" | sudo tee -a /etc/usbmount/usbmount.conf
 echo "" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "FILESYSTEMS=\"vfat ext2 ext3 ext4 hfsplus exfat ntfs\"" | sudo tee -a /etc/usbmount/usbmount.conf
+echo "FILESYSTEMS=\"vfat\"" | sudo tee -a /etc/usbmount/usbmount.conf
 echo "" | sudo tee -a /etc/usbmount/usbmount.conf
 echo "MOUNTOPTIONS=\"sync,noexec,nodev,noatime,nodiratime\"" | sudo tee -a /etc/usbmount/usbmount.conf
 echo "FS_MOUNTOPTIONS=\"\"" | sudo tee -a /etc/usbmount/usbmount.conf

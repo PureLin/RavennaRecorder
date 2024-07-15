@@ -71,6 +71,9 @@
     }
 
     function changeStream(index) {
+        changeSettings({
+            folder: document.getElementById("folder_list").value,
+        })
         if (index < 0) {
             let cmd = {
                 "command": "stop_all_stream"
@@ -372,9 +375,6 @@
         <label for="write_interval_in_ms" style="margin:0 20px">File Write Interval</label>
         <select id="write_interval_in_ms" onchange="changeSettings({write_interval_in_ms:this.value})"
                 style="width: 80px">
-            <option value="1">1</option>
-            <option value="5">5</option>
-            <option value="10">10</option>
             <option value="100" selected>100</option>
             <option value="200">200</option>
             <option value="500">500</option>

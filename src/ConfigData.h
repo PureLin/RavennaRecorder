@@ -31,13 +31,12 @@ public:
     //only used in runtime
     map<string, stream_info> streamInfoMap;
     vector<string> availablePaths;
-    string currentRecordPath;
+    string currentRecordPath = "";
     //need to be saved to Config.json
     bool startRecordImmediately;
     bool enableSaveToHomeDir;
     int fileWriteIntervalInMs;
     int httpServerPort;
-    string defaultRecordPath;
     int splitTimeInMinutes;
     string configPassword = "0000";
 
