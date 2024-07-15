@@ -51,6 +51,7 @@ public:
 
 private:
     bool channelSelected[MAX_RECORD_CHANNELS];
+    int selectedChannelCount = 0;
     std::atomic<bool> needSlice = false;
     std::atomic<int32_t> last_max_value = 0;
     BlockingConcurrentQueue<int32_t> audioQueue{};
@@ -65,14 +66,14 @@ private:
     int packet_size;
     int file_write_batch;
     string currentFileName;
-    int oneWriteBatchSampleCount;
     SF_INFO recordInfo{};
     SNDFILE *recordFile{};
     int32_t *fileBuffer;
     int lastWriteDurationInMs = 0;
 
     bool networkFrameSkipping = false;
-    bool bufferTooMuchData = false;
+    bool audioBufferTooMuch = false;
+    bool writingIsSlow = false;
 
     void calculateRecordConfigs();
 

@@ -8,12 +8,14 @@
 
 #define MAX_SDP_PACKET_SIZE 4096
 #define RTP_HEADER_SIZE 12
+#define TEN_MB 2621440
 
 extern char zeroconf_ip_address[NI_MAXHOST];
 
 StreamRecorder::StreamRecorder(const stream_info &streamInfo) : audio_receive_socket(-1) {
     currentStreamInfo = streamInfo;
     calculateRecordConfigs();
+    selectedChannelCount = currentStreamInfo.channelCount;
     for (bool &i: channelSelected) {
         i = true;
     }
@@ -50,11 +52,8 @@ void StreamRecorder::calculateRecordConfigs() {
         inErrorState = STREAM_FORMAT_ERROR;
         logging("%s Unsupported bit depth %d", currentStreamInfo.streamName.c_str(), currentStreamInfo.bitDepth);
     }
-    int oneWriteFrameCount = currentStreamInfo.sampleRate * ConfigData::getInstance()->fileWriteIntervalInMs / 1000;
-    oneWriteBatchSampleCount = max(oneWriteFrameCount, currentStreamInfo.onePacketFrameLength) * currentStreamInfo.channelCount;
     logging("%s packet size %d", currentStreamInfo.streamName.c_str(), packet_size);
-    logging("%s oneWriteBatchSampleCount %d %d", currentStreamInfo.streamName.c_str(), oneWriteFrameCount, oneWriteBatchSampleCount);
-    fileBuffer = new int32_t[2621440];
+    fileBuffer = new int32_t[TEN_MB];
 }
 
 void StreamRecorder::start() {
@@ -69,7 +68,7 @@ void StreamRecorder::start() {
     }
     isRecording = true;
     inErrorState = NO_ERROR;
-    bufferTooMuchData = false;
+    writingIsSlow = false;
     networkFrameSkipping = false;
     recordThread = thread(&StreamRecorder::doRecord, this);
     writeThread = thread(&StreamRecorder::doWrite, this);
@@ -157,7 +156,7 @@ void StreamRecorder::doRecord() {
                 last_max_value = abs(netBuffer[i]);
             }
         }
-        audioQueue.enqueue_bulk(netBuffer, samples_per_packet);
+        audioQueue.enqueue_bulk(netBuffer, size);
     }
     if (audio_receive_socket != -1) {
         close(audio_receive_socket);
@@ -170,7 +169,9 @@ void StreamRecorder::doWrite() {
     int remainSample = 0;
     int writeFrameCount = 0;
     int actualReadSampleCount;
-    logging("%s: oneWriteBatchSampleCount %d", currentStreamInfo.streamName.c_str(), oneWriteBatchSampleCount);
+    std::chrono::time_point<std::chrono::system_clock> warningDismissTime = std::chrono::system_clock::now();
+    int queueThreshold = currentStreamInfo.sampleRate * ConfigData::getInstance()->fileWriteIntervalInMs * 4 / 1000;
+    logging("%s: queueThreshold %d", currentStreamInfo.streamName.c_str(), queueThreshold);
     while (isRecording && inErrorState == NO_ERROR) {
         if (recordFile == nullptr) {
             if (!openNewFile()) {
@@ -179,25 +180,28 @@ void StreamRecorder::doWrite() {
             }
             lastWriteDurationInMs = 0;
         }
-        if (audioQueue.size_approx() > oneWriteBatchSampleCount) {
-            actualReadSampleCount = (int) audioQueue.wait_dequeue_bulk_timed(fileBuffer + remainSample, max(audioQueue.size_approx(), (size_t) 2621440 / 2), std::chrono::milliseconds(1));
-        } else {
-            actualReadSampleCount = (int) audioQueue.wait_dequeue_bulk_timed(fileBuffer + remainSample, oneWriteBatchSampleCount, std::chrono::milliseconds(1));
+        actualReadSampleCount = (int) audioQueue.wait_dequeue_bulk_timed(fileBuffer + remainSample, TEN_MB - remainSample, std::chrono::milliseconds(ConfigData::getInstance()->fileWriteIntervalInMs));
+        if (audioQueue.size_approx() > queueThreshold) {
+            logging("%s: Audio queue is too much %d", currentStreamInfo.streamName.c_str(), audioQueue.size_approx());
+            audioBufferTooMuch = true;
         }
-        int writeFrame = (remainSample + actualReadSampleCount) / currentStreamInfo.channelCount;
-        remainSample = (remainSample + actualReadSampleCount) % currentStreamInfo.channelCount;
+        int writeFrame = (remainSample + actualReadSampleCount) /selectedChannelCount;
+        remainSample = (remainSample + actualReadSampleCount) % selectedChannelCount;
         if (writeFrame != 0) {
             std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
             sf_writef_int(recordFile, fileBuffer, writeFrame);
             std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
-            double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-            lastWriteDurationInMs = max(lastWriteDurationInMs, (int) elapsed + 1);
-            if (elapsed > ConfigData::getInstance()->fileWriteIntervalInMs && elapsed > writeFrame * 1000.0 / currentStreamInfo.sampleRate) {
-                bufferTooMuchData = true;
+            int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            if (elapsed > ConfigData::getInstance()->fileWriteIntervalInMs) {
+                lastWriteDurationInMs = elapsed;
+                writingIsSlow = true;
+                warningDismissTime = end + std::chrono::seconds(30);
+            } else if (warningDismissTime < end) {
+                writingIsSlow = false;
             }
         }
         if (writeFrame != 0 && remainSample > 0) {
-            memcpy(fileBuffer, fileBuffer + writeFrame * currentStreamInfo.channelCount, remainSample * sizeof(int32_t));
+            memcpy(fileBuffer, fileBuffer + writeFrame * selectedChannelCount, remainSample * sizeof(int32_t));
         }
         writeFrameCount += writeFrame;
         if (writeFrameCount >= file_write_batch) {
@@ -292,13 +296,13 @@ bool StreamRecorder::openNewFile() {
             return false;
         }
     }
-    int channelCount = 0;
+    selectedChannelCount = 0;
     for (int i = 0; i < currentStreamInfo.channelCount; i++) {
         if (channelSelected[i]) {
-            channelCount++;
+            selectedChannelCount++;
         }
     }
-    recordInfo.channels = channelCount;
+    recordInfo.channels = selectedChannelCount;
     currentFileName = getCurrentTime() + ".wav";
     string fullFileName = recordPath + "/" + getCurrentTime() + ".wav";
     recordFile = sf_open(fullFileName.c_str(), SFM_WRITE, &recordInfo);
@@ -353,6 +357,8 @@ void StreamRecorder::closeRecordFile() {
         recordFile = nullptr;
         currentFileName = "";
     }
+    audioBufferTooMuch = false;
+    writingIsSlow = false;
 }
 
 void StreamRecorder::setChannelSelected(int channel, bool selected) {
@@ -386,13 +392,16 @@ string StreamRecorder::getErrorMessage() {
                 break;
         }
     }
-    if (networkFrameSkipping || bufferTooMuchData) {
+    if (audioBufferTooMuch) {
+        return "Error: Files are written too slow causing data backlog, please stop recording and swap a faster storage device.";
+    }
+    if (networkFrameSkipping || writingIsSlow) {
         string result = "Warning:";
         if (networkFrameSkipping) {
             result += "Some audio packet dropped, will have pop sound in record file.  ";
         }
-        if (bufferTooMuchData) {
-            result += "File writing is slow, try to increase 'File Write Interval' above " + to_string(lastWriteDurationInMs) + "ms or use a faster storage device.";
+        if (writingIsSlow) {
+            result += "File writing is slow(" + to_string(lastWriteDurationInMs) + "ms), try to increase 'File Write Interval' or use a faster storage device.";
         }
         return result;
     }

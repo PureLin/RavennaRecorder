@@ -1,6 +1,6 @@
 echo "----Get dependencies libs and build tools----\n"
 
-sudo apt install cmake build-essential libsndfile1 libsndfile1-dev libboost-all-dev htop net-tools debhelper devscripts lockfile-progs exfat-fuse exfatprogs hfsplus hfsprogs -y
+sudo apt install cmake build-essential libsndfile1 libsndfile1-dev libboost-all-dev htop net-tools debhelper devscripts lockfile-progs exfat-fuse exfatprogs ntfs-3g -y
 
 if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
   echo "\n----Old version of service found, remove it----\n"
@@ -10,33 +10,6 @@ if [ -f "/etc/systemd/system/RavennaRecorder.service" ]; then
   sudo systemctl daemon-reload
   sudo rm /usr/local/bin/RavennaRecorder
 fi
-
-if ! dpkg -l | grep -qw usbmount; then
-    echo "\n----Install usbmount----\n"
-    set -e
-    git clone https://github.com/rbrito/usbmount.git
-    cd usbmount
-    sudo dpkg-buildpackage -us -uc -b
-    sudo dpkg -i ../usbmount_*.deb
-    cd ..
-else
-    echo "\n----usbmount already installed----\n"
-fi
-
-echo "\n----Create usbmount config----\n"
-if [ -f "/etc/usbmount/usbmount.conf" ]; then
-    sudo rm /etc/usbmount/usbmount.conf
-fi
-echo "ENABLED=1" | sudo tee /etc/usbmount/usbmount.conf
-echo "" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "MOUNTPOINTS=\"/media/usb0 /media/usb1 /media/usb2 /media/usb3 /media/usb4 /media/usb5 /media/usb6 /media/usb7\"" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "FILESYSTEMS=\"vfat ext2 ext3 ext4 hfsplus exfat ntfs\"" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "MOUNTOPTIONS=\"sync,noexec,nodev,noatime,nodiratime\"" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "FS_MOUNTOPTIONS=\"\"" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "" | sudo tee -a /etc/usbmount/usbmount.conf
-echo "VERBOSE=no" | sudo tee -a /etc/usbmount/usbmount.conf
 
 echo "\n----Build the project----\n"
 

@@ -53,6 +53,30 @@ std::vector<std::string> getAvailablePath() {
             currentPaths.clear();
             currentDisk = name;
         } else if (type == "part") {
+            if (mountPoint.empty()) {
+                string partName;
+                for (int i = 0; i != name.length(); ++i) {
+                    if (isalnum(name[i])) {
+                        partName = name.substr(i);
+                        break;
+                    }
+                }
+                logging("Found a usb drive partition %s", partName.c_str());
+                string path = "/media/usb-" + partName;
+                if (!directoryExists(path)) {
+                    if (mkdir(path.c_str(), 0777) == -1) {
+                        logging("Failed to create directory %s", path.c_str());
+                        continue;
+                    }
+                }
+                std::string mountCommand = "mount /dev/" + partName + " " + path;
+                logging("Mounting a usb drive %s", mountCommand.c_str());
+                int mountResult = system(mountCommand.c_str());
+                if (mountResult != 0) {
+                    logging("Failed to mount %s", partName.c_str());
+                    continue;
+                }
+            }
             if (!mountPoint.empty() && mountPoint.find("/media/usb") != std::string::npos) {
                 if (!directoryExists(mountPoint + "/RavennaRecords")) {
                     if (mkdir((mountPoint + "/RavennaRecords").c_str(), 0777) == -1) {
