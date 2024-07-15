@@ -61,16 +61,14 @@
     }
 
     function getButtonTitle(status) {
-        if (status === "Recording") {
-            return "STOP";
-        } else if (status === "Error") {
+        if (status === "Error") {
             return "RESTART";
         } else {
             return "START";
         }
     }
 
-    function changeStream(index) {
+    function changeStream(index, action = null) {
         changeSettings({
             folder: document.getElementById("folder_list").value,
         })
@@ -82,11 +80,8 @@
             return;
         }
         let stream = stream_list[index];
-        let action = "";
-        if (stream.status === "Recording") {
-            action = "stop";
-        } else {
-            action = "start";
+        if (!action) {
+            action = stream.status === "Recording" ? "stop" : "start";
         }
         let cmd = {
             "command": "set_stream",
@@ -194,7 +189,9 @@
                         ${Array(parseInt(stream.channel_count)).fill(0).map((_, index) => getChannelCheckbox(i, index, stream.channel_selected, stream.status === "Recording")).join('')}
                     </td>
                     <td>
-                        <button style="margin: 10px" onclick=changeStream(${i})>${getButtonTitle(stream.status)}</button>
+                        <button style="margin: 10px" onclick=changeStream(${i},"start") ${stream.status === "Recording" ? 'disabled' : ''}>${getButtonTitle(stream.status)}</button>
+                        <label >   </label>
+                        <button style="margin: 10px" onclick=changeStream(${i},"stop") ${stream.status === "Recording" ? '' : 'disabled'}>STOP</button>
                         <label >   </label>
                         <button style="margin: 10px" onclick=sliceStream(${i}) ${stream.status === "Recording" ? '' : 'disabled'}>SliceFile</button>
                     </td>
