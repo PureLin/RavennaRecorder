@@ -17,6 +17,10 @@ std::string getHomeDirectory() {
     }
 }
 
+std::string getLogDirectory() {
+    return getHomeDirectory() + "/Logs";
+}
+
 bool directoryExists(const std::string &dirPath) {
     return std::filesystem::exists(dirPath);
 }

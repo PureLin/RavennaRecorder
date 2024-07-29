@@ -185,7 +185,7 @@ void StreamRecorder::doWrite() {
             logging("%s: Audio queue is too much %d", currentStreamInfo.streamName.c_str(), audioQueue.size_approx());
             audioBufferTooMuch = true;
         }
-        int writeFrame = (remainSample + actualReadSampleCount) /selectedChannelCount;
+        int writeFrame = (remainSample + actualReadSampleCount) / selectedChannelCount;
         remainSample = (remainSample + actualReadSampleCount) % selectedChannelCount;
         if (writeFrame != 0) {
             std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
@@ -304,14 +304,14 @@ bool StreamRecorder::openNewFile() {
     }
     recordInfo.channels = selectedChannelCount;
     currentFileName = getCurrentTime() + ".wav";
-    string fullFileName = recordPath + "/" + getCurrentTime() + ".wav";
-    recordFile = sf_open(fullFileName.c_str(), SFM_WRITE, &recordInfo);
+    currentFileFullName = recordPath + "/" + getCurrentTime() + ".wav";
+    recordFile = sf_open(currentFileFullName.c_str(), SFM_WRITE, &recordInfo);
     if (recordFile == nullptr) {
-        logging("%s: Error opening file: %s", fullFileName.c_str(), sf_strerror(recordFile));
+        logging("%s: Error opening file: %s", currentFileFullName.c_str(), sf_strerror(recordFile));
         inErrorState = FILE_ERROR;
         return false;
     } else {
-        logging("%s: File opened: %s", streamNameSanitized.c_str(), fullFileName.c_str());
+        logging("%s: File opened: %s", streamNameSanitized.c_str(), currentFileFullName.c_str());
         return true;
     }
 }
@@ -343,11 +343,12 @@ string StreamRecorder::getCurrentFileName() {
         return "";
     }
     int last_max = int(20.0 * std::log10(last_max_value / (double) INT32_MAX));
+    auto fileSize = std::filesystem::file_size(currentFileFullName) / 1024 / 1024;
     last_max_value = 0;
     if (last_max < -120) {
-        return currentFileName + "@ -inf dBFs";
+        return currentFileName + "@ -inf dBFs #" + std::to_string(fileSize) + "MB";
     } else {
-        return currentFileName + "@ " + std::to_string(last_max) + " dBFs";
+        return currentFileName + "@ " + std::to_string(last_max) + " dBFs #" + std::to_string(fileSize) + "MB";
     }
 }
 

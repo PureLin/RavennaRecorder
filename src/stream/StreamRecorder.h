@@ -66,6 +66,7 @@ private:
     int packet_size;
     int file_write_batch;
     string currentFileName;
+    string currentFileFullName;
     SF_INFO recordInfo{};
     SNDFILE *recordFile{};
     int32_t *fileBuffer;

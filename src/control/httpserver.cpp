@@ -36,6 +36,36 @@ void httpserver::run() {
         res.set_header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
         res.set_header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
     });
+    svr.Get("/logs", [](const httplib::Request &request, httplib::Response &res) {
+        std::string directory_path = getLogDirectory();
+        std::string html_content = "<html><body><ul>";
+        std::vector<std::filesystem::directory_entry> entries;
+        for (const auto &entry: std::filesystem::directory_iterator(directory_path)) {
+            entries.push_back(entry);
+        }
+        std::sort(entries.begin(), entries.end(), [](const auto &a, const auto &b) {
+            return a.path().filename().string() < b.path().filename().string();
+        });
+        for (const auto &entry: entries) {
+            std::string filename = entry.path().filename().string();
+            html_content += "<li><a href=\"/file?name=" + filename + "\">" + filename + "</a></li>";
+        }
+        html_content += "</ul></body></html>";
+        res.set_content(html_content, "text/html");
+    });
+    svr.Get("/file", [](const httplib::Request &request, httplib::Response &res) {
+        std::string filename = request.get_param_value("name");
+        std::string file_path = getLogDirectory() + "/" + filename;
+        std::ifstream file(file_path);
+        if (file) {
+            std::string content((std::istreambuf_iterator<char>(file)),
+                                std::istreambuf_iterator<char>());
+            res.set_content(content, "text/plain");
+        } else {
+            res.status = 404;
+            res.set_content("File not found", "text/plain");
+        }
+    });
     svr.Get("/", [](const httplib::Request &request, httplib::Response &res) {
         logging("httpserver get request from %s", request.remote_addr.c_str());
         std::ifstream t(getHomeDirectory() + "/ConfigMain.html");

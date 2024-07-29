@@ -37,7 +37,7 @@ void open_log_file() {
     struct tm *local_time = localtime(&now);
     char time_string[80];
     strftime(time_string, sizeof(time_string), "%Y_%m_%d_%H_%M_%S", local_time);
-    std::string logPath = getHomeDirectory() + "/Logs";
+    std::string logPath = getLogDirectory();
     if (!directoryExists(logPath)) {
         mkdir((logPath).c_str(), 0777);
     }

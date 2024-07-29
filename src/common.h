@@ -9,6 +9,8 @@
 
 std::string getHomeDirectory();
 
+std::string getLogDirectory();
+
 bool directoryExists(const std::string &dirPath);
 
 std::string getCurrentTime();
