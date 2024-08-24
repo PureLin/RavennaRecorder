@@ -45,6 +45,10 @@ cd resource/soundpuzzle
 cp ConfigMain.html $HOME/ConfigMain.html
 cd ../..
 
+echo -e "\n----Remove Repo----\n"
+cd ~
+rm -rf RavennaRecorder
+
 echo -e "\n----Update version info----\n"
 curl https://api.github.com/repos/PureLin/RavennaRecorder/git/refs/heads/master > $HOME/version.info
 
