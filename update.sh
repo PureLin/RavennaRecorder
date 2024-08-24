@@ -8,7 +8,7 @@ curr_ver="$HOME/version.info"
 # 使用 diff 命令比较
 if diff "$curr_ver" "$new_ver" > /dev/null; then
     echo "No new version available"
-    return 0
+    exit 0
 fi
 
 cd ~
@@ -54,4 +54,4 @@ echo -e "\n----Update version info----\n"
 curl https://api.github.com/repos/PureLin/RavennaRecorder/git/refs/heads/master > $HOME/version.info
 
 echo -e "\n----Update finished----\n"
-return 1
+exit 1
