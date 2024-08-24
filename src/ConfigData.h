@@ -32,6 +32,7 @@ public:
     map<string, stream_info> streamInfoMap;
     vector<string> availablePaths;
     string currentRecordPath = "";
+    bool currentRecordPathAvailable = false;
     //need to be saved to Config.json
     bool startRecordImmediately;
     bool enableSaveToHomeDir;

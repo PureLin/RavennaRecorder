@@ -130,6 +130,12 @@ void StreamRecorder::doRecord() {
             setup_stream_socket();
             continue;
         }
+        if (!ConfigData::getInstance()->currentRecordPathAvailable) {
+            logging(LogLevel::ERROR, "%s: Record path not available", currentStreamInfo.streamName.c_str());
+            inErrorState = STORAGE_DISCONNECTION_ERROR;
+            isRecording = false;
+            break;
+        }
         n = recvfrom(audio_receive_socket, webBuffer, MAX_SDP_PACKET_SIZE, 0, nullptr, nullptr);
         if (n <= 0) {
             inErrorState = SOCKET_ERROR;
@@ -191,6 +197,7 @@ void StreamRecorder::doWrite() {
         if (writeFrame != 0) {
             std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
             sf_writef_int(recordFile, fileBuffer, writeFrame);
+            sf_write_sync(recordFile);
             std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
             int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             if (elapsed > ConfigData::getInstance()->fileWriteIntervalInMs) {
@@ -216,7 +223,7 @@ void StreamRecorder::doWrite() {
             needSlice = false;
         }
     }
-    logging("%s: Write thread exit", currentStreamInfo.streamName.c_str());
+    logging(LogLevel::WARN, "%s: Write thread exit", currentStreamInfo.streamName.c_str());
     closeRecordFile();
 }
 
@@ -391,6 +398,8 @@ string StreamRecorder::getErrorMessage() {
             case PATH_ERROR:
             case FILE_ERROR:
                 return "Error:Can't create recording file, check your storage configuration";
+            case STORAGE_DISCONNECTION_ERROR:
+                return "Error:Storage disconnected, check your storage device settings or plug it back";
             default:
                 break;
         }

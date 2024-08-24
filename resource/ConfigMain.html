@@ -189,11 +189,11 @@
                         ${Array(parseInt(stream.channel_count)).fill(0).map((_, index) => getChannelCheckbox(i, index, stream.channel_selected, stream.status === "Recording")).join('')}
                     </td>
                     <td>
-                        <button style="margin: 10px" onclick=changeStream(${i},"start") ${stream.status === "Recording" ? 'disabled' : ''}>${getButtonTitle(stream.status)}</button>
+                        <button style="margin: 10px" onclick=changeStream(${i},"start") ${!received_msg.folder_available || stream.status === "Recording" ? 'disabled' : ''}>${getButtonTitle(stream.status)}</button>
                         <label >   </label>
-                        <button style="margin: 10px" onclick=changeStream(${i},"stop") ${stream.status === "Recording" ? '' : 'disabled'}>STOP</button>
+                        <button style="margin: 10px" onclick=changeStream(${i},"stop") ${!received_msg.folder_available || stream.status !== "Recording" ? 'disabled' : ''}>STOP</button>
                         <label >   </label>
-                        <button style="margin: 10px" onclick=sliceStream(${i}) ${stream.status === "Recording" ? '' : 'disabled'}>SliceFile</button>
+                        <button style="margin: 10px" onclick=sliceStream(${i}) ${!received_msg.folder_available || stream.status !== "Recording" ? 'disabled' : ''}>SliceFile</button>
                     </td>
                 `;
                 }
@@ -357,7 +357,7 @@
     <h3>System Configs</h3>
     <div class="section">
         <label for="folder_list" style="margin:0 20px">Save Path</label>
-        <select id="folder_list" onchange="changeSettings({folder:this.value})" style="width: 300px;"></select>
+        <select id="folder_list" onchange="changeSettings({folder:this.value})" style="width: 500px;"></select>
     </div>
     <div class="section">
         <label for="split_time_minute" style="margin:0 20px">Auto Split Length</label>
@@ -376,6 +376,9 @@
             <option value="200">200</option>
             <option value="500">500</option>
             <option value="1000">1000</option>
+            <option value="2000">2000</option>
+            <option value="5000">5000</option>
+            <option value="10000">10000</option>
         </select>
         <label for="write_interval_in_ms">ms</label>
         <div class="tooltip" style="margin:0 20px"> ℹ

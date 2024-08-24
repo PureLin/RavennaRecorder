@@ -55,6 +55,7 @@ void ConfigData::read_config() {
         }
         if (j.contains("logLevel")) {
             logLevel = j["logLevel"];
+            set_log_level(logLevel);
         }
     } catch (json::parse_error &e) {
         logging("parse error: %s", e.what());

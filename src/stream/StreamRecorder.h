@@ -17,7 +17,8 @@ enum ErrorState {
     STREAM_CHANGE_ERROR,
     STREAM_FORMAT_ERROR,
     FILE_ERROR,
-    PATH_ERROR
+    PATH_ERROR,
+    STORAGE_DISCONNECTION_ERROR,
 };
 using namespace moodycamel;
 

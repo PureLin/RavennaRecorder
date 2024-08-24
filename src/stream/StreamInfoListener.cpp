@@ -64,7 +64,7 @@ void setup_sdp_socket() {
 
 [[noreturn]] void checkDisconnectedStreams() {
     while (true) {
-        sleep(2);
+        sleep(1);
         ConfigData::getInstance()->availablePaths = getAvailablePath();
     }
 }

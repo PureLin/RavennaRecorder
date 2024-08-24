@@ -82,6 +82,7 @@ void open_log_file() {
     }
     logger = spdlog::daily_logger_mt("daily_logger", logPath + "/Recorder.log", 0, 0);
     logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
+    logger->set_level(spdlog::level::debug);
     logger->log(spdlog::level::info, "Start RavennaRecorder");
 //    log_file = fopen((logPath + "/Recorder" + time_string + ".log").c_str(), "a");
 //    if (log_file == nullptr) {
@@ -101,17 +102,17 @@ void set_log_level(int level) {
     }
     spdlog::flush_every(std::chrono::seconds(3));
     switch (level) {
-        case 1:
+        case LogLevel::DEBUG:
             logger->set_level(spdlog::level::debug);
             break;
-        case 2:
+        case LogLevel::INFO:
         default:
             logger->set_level(spdlog::level::info);
             break;
-        case 3:
+        case LogLevel::WARN:
             logger->set_level(spdlog::level::warn);
             break;
-        case 4:
+        case LogLevel::ERROR:
             logger->set_level(spdlog::level::err);
             break;
     }

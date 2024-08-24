@@ -33,15 +33,61 @@ std::string getCurrentTime() {
     return time_string;
 }
 
+//std::vector<string> getAllMountPoint() {
+//    string command = "mount | grep \"/media/\" | awk '{print $3}'";
+//    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+//    if (!pipe) {
+//        throw std::runtime_error("popen() for mount point failed!");
+//    }
+//    char line[512];
+//    std::vector<string> result;
+//    while (fgets(line, sizeof(line), pipe.get())) {
+//        std::string mountPoint(line);
+//        mountPoint = mountPoint.substr(0, mountPoint.size() - 1); // remove newline character
+//        logging(LogLevel::DEBUG, "Found mount point \"%s\"", mountPoint.c_str());
+//        result.push_back(mountPoint);
+//    }
+//    return result;
+//}
+
+std::string getDeviceId(string diskName) {
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(("udevadm info /dev/" + diskName + "| grep -E \"S: disk/by-id/|E: ID_SERIAL_SHORT=\" ").c_str(), "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() for deviceId failed!");
+    }
+    char line[512];
+    string deviceId;
+    string serial;
+    while (fgets(line, sizeof(line), pipe.get())) {
+        if (strstr(line, "S: disk/by-id/")) {
+            deviceId = line;
+            deviceId = deviceId.substr(14, deviceId.length() - 15);
+        }
+        if (strstr(line, "E: ID_SERIAL_SHORT=")) {
+            serial = line;
+            serial = serial.substr(19, serial.length() - 20);
+            serial = "_" + serial;
+        }
+    }
+    if (!serial.empty()) {
+        deviceId.replace(deviceId.find(serial), serial.length(), "");
+    }
+    deviceId = sanitizeFilePath(deviceId);
+    logging(LogLevel::DEBUG, "Driver %s has device id %s", diskName.c_str(), deviceId.c_str());
+    return deviceId;
+}
+
 std::vector<std::string> getAvailablePath() {
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("lsblk -o NAME,TYPE,MOUNTPOINT", "r"), pclose);
     if (!pipe) {
-        throw std::runtime_error("popen() failed!");
+        throw std::runtime_error("popen() for drive list failed!");
     }
     char line[256];
+    std::vector<std::string> currentMountPoints;
     std::vector<std::string> result;
     std::string currentDisk;
     vector<string> currentPaths;
+    int partId = 0;
     while (fgets(line, sizeof(line), pipe.get())) {
         std::string device(line);
         device = device.substr(0, device.size() - 1); // remove newline character
@@ -55,9 +101,17 @@ std::vector<std::string> getAvailablePath() {
                 result.insert(result.end(), currentPaths.begin(), currentPaths.end());
             }
             currentPaths.clear();
-            currentDisk = name;
+            currentDisk = getDeviceId(name);
+            partId = 0;
+            if (currentDisk.empty()) {
+                continue;
+            }
         } else if (type == "part") {
+            ++partId;
             if (mountPoint.empty()) {
+                if (currentDisk.empty()) {
+                    continue;
+                }
                 string partName;
                 for (int i = 0; i != name.length(); ++i) {
                     if (isalnum(name[i])) {
@@ -65,26 +119,28 @@ std::vector<std::string> getAvailablePath() {
                         break;
                     }
                 }
-                logging("Found a usb drive partition %s", partName.c_str());
-                string path = "/media/usb-" + partName;
+                logging(LogLevel::WARN, "Found a usb drive partition %s", partName.c_str());
+                string path = "/media/" + currentDisk + "_part" + to_string(partId);
                 if (!directoryExists(path)) {
                     if (mkdir(path.c_str(), 0777) == -1) {
-                        logging("Failed to create directory %s", path.c_str());
+                        logging(LogLevel::ERROR, "Failed to create directory %s", path.c_str());
                         continue;
                     }
                 }
                 std::string mountCommand = "mount /dev/" + partName + " " + path;
-                logging("Mounting a usb drive %s", mountCommand.c_str());
+                logging(LogLevel::WARN, "Mounting a usb drive %s", mountCommand.c_str());
                 int mountResult = system(mountCommand.c_str());
                 if (mountResult != 0) {
                     logging("Failed to mount %s", partName.c_str());
                     continue;
                 }
+                mountPoint = path;
             }
-            if (!mountPoint.empty() && mountPoint.find("/media/usb") != std::string::npos) {
+            currentMountPoints.push_back(mountPoint);
+            if (!mountPoint.empty() && mountPoint.find("/media/") != std::string::npos) {
                 if (!directoryExists(mountPoint + "/RavennaRecords")) {
                     if (mkdir((mountPoint + "/RavennaRecords").c_str(), 0777) == -1) {
-                        logging("Failed to create directory %s", mountPoint.c_str());
+                        logging(LogLevel::ERROR, "Failed to create directory %s", mountPoint.c_str());
                         continue;
                     }
                 }
@@ -99,13 +155,22 @@ std::vector<std::string> getAvailablePath() {
         string homeDir = getHomeDirectory() + "/RavennaRecords";
         if (!directoryExists(homeDir)) {
             if (mkdir((homeDir).c_str(), 0777) == -1) {
-                logging("Failed to create home directory");
+                logging(LogLevel::ERROR, "Failed to create home directory");
             }
         }
         result.push_back(homeDir);
     }
     if (ConfigData::getInstance()->currentRecordPath.empty() && !result.empty()) {
         ConfigData::getInstance()->currentRecordPath = result[0];
+    } else {
+        bool found = false;
+        for (const auto &path: result) {
+            if (path == ConfigData::getInstance()->currentRecordPath) {
+                found = true;
+                break;
+            }
+        }
+        ConfigData::getInstance()->currentRecordPathAvailable = found;
     }
     return result;
 }
