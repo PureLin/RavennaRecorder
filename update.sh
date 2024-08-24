@@ -44,7 +44,7 @@ cp ConfigMain.html $HOME/ConfigMain.html
 cd ../..
 
 echo -e "\n----Update version info----\n"
-curl https://api.github.com/repos/PureLin/RavennaRecorder/git/refs/heads/master > version.info
+curl https://api.github.com/repos/PureLin/RavennaRecorder/git/refs/heads/master > $HOME/version.info
 
 echo -e "\n----Update finished----\n"
 return 1
