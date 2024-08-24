@@ -28,7 +28,7 @@ std::string getLogDirectory() {
 void updateThreadFunction() {
     logging(LogLevel::WARN, "Checking for update");
     ConfigData::getInstance()->isCheckingForUpdate = true;
-    string updateCommand = "curl -sL https://raw.githubusercontent.com/PureLin/RavennaRecorder/master/update.sh | sudo -E bash ";
+    string updateCommand = "curl -sL -m 3 https://raw.githubusercontent.com/PureLin/RavennaRecorder/master/update.sh | sudo -E bash ";
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen((updateCommand.c_str()), "r"), pclose);
     char line[1024];
     while (fgets(line, sizeof(line), pipe.get())) {

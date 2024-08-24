@@ -8,7 +8,7 @@ curr_ver="$HOME/version.info"
 if diff "$curr_ver" "$new_ver" > /dev/null; then
     echo "No new version available"
     return 0
-
+fi
 
 echo "New version available, start update"
 echo -e "\n----clean up old repo----\n"
