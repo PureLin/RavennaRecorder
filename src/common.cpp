@@ -112,7 +112,7 @@ std::vector<std::string> getAvailablePath() {
 
 std::string sanitizeFilePath(const std::string &input) {
     std::string output = input;
-    std::string invalidChars = "\\/:*?\"<>|";
+    std::string invalidChars = "\\/:*?\"<>| ";
     for (char &c: output) {
         if (invalidChars.find(c) != std::string::npos) {
             c = '_';
