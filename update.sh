@@ -10,7 +10,7 @@ if diff "$curr_ver" "$new_ver" > /dev/null; then
     return 0
 fi
 
-echo "New version available, start update"
+echo -e "New version available, start update"
 echo -e "\n----clean up old repo----\n"
 rm -rf RavennaRecorder
 
@@ -26,7 +26,7 @@ cd RavennaRecorder
 sudo chmod +x dependency.sh
 sudo -E ./dependency.sh
 
-echo "\n----Build the project----\n"
+echo -e "\n----Build the project----\n"
 
 rm -rf build
 mkdir build
@@ -34,13 +34,17 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j4
 
-echo "\n----Copy build result----\n"
+echo -e "\n----Copy build result----\n"
 cp RavennaRecorder /usr/local/bin
 cd ..
 
-echo "\n----Copy config page----\n"
+echo -e "\n----Copy config page----\n"
 cd resource/soundpuzzle
 cp ConfigMain.html $HOME/ConfigMain.html
 cd ../..
 
+echo -e "\n----Update version info----\n"
+curl https://api.github.com/repos/PureLin/RavennaRecorder/git/refs/heads/master > version.info
+
+echo -e "\n----Update finished----\n"
 return 1

@@ -35,7 +35,7 @@
         status.innerHTML = "Connected";
         status.style.color = "green";
         status.onclick = null;
-    };
+    }
 
     function wsclose() {
         // set status header to disconnected and red
@@ -149,6 +149,7 @@
             "command": "check_update"
         };
         ws.send(JSON.stringify(cmd));
+        document.getElementById("update_logs").hidden = false;
     }
 
     function getChannelCheckbox(stream_id, index, channel_mask, recording) {
@@ -221,6 +222,10 @@
                 document.getElementById("split_time_minute").value = received_msg.split_time_minute;
                 document.getElementById("start_immediately").checked = received_msg.start_immediately;
                 document.getElementById("write_interval_in_ms").value = received_msg.write_interval_in_ms;
+                if (received_msg.update_logs) {
+                    document.getElementById("update_logs").hidden = false;
+                    document.getElementById("update_logs").innerHTML = received_msg.update_logs.join("");
+                }
                 break;
             default:
                 console.log(evt.data);
@@ -409,6 +414,9 @@
     </div>
     <div class="section">
         <button onclick="checkUpdate()">Check for update</button>
+    </div>
+    <div class="section">
+        <textarea id="update_logs" style="width: 80%; height: 300px; margin-top: 10px" readonly hidden></textarea>
     </div>
 </div>
 </body>

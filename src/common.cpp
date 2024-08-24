@@ -37,6 +37,7 @@ void updateThreadFunction() {
         updateLogs.push_back(log);
     }
     logging(LogLevel::WARN, "Update finished");
+    sleep(10);
     ConfigData::getInstance()->isCheckingForUpdate = false;
 }
 
