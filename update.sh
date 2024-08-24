@@ -10,6 +10,8 @@ if diff "$curr_ver" "$new_ver" > /dev/null; then
     return 0
 fi
 
+cd ~
+
 echo -e "New version available, start update"
 echo -e "\n----clean up old repo----\n"
 rm -rf RavennaRecorder
