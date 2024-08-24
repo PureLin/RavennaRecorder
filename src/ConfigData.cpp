@@ -53,6 +53,9 @@ void ConfigData::read_config() {
         if (j.contains("httpServerPort")) {
             httpServerPort = j["httpServerPort"];
         }
+        if (j.contains("logLevel")) {
+            logLevel = j["logLevel"];
+        }
     } catch (json::parse_error &e) {
         logging("parse error: %s", e.what());
     }
@@ -72,6 +75,8 @@ void ConfigData::save_config() {
     j["enableSaveToHomeDir"] = enableSaveToHomeDir;
     j["fileWriteIntervalInMs"] = fileWriteIntervalInMs;
     j["httpServerPort"] = httpServerPort;
+    j["logLevel"] = logLevel;
+    set_log_level(logLevel);
     std::string s = j.dump(2);
     fp = fopen((getHomeDirectory() + "/RecorderConfig.json").c_str(), "w");
     if (fp == nullptr) {

@@ -158,6 +158,7 @@ void StreamRecorder::doRecord() {
         }
         audioQueue.enqueue_bulk(netBuffer, size);
     }
+    logging("%s: Record thread exit", currentStreamInfo.streamName.c_str());
     if (audio_receive_socket != -1) {
         close(audio_receive_socket);
         audio_receive_socket = -1;
@@ -215,6 +216,7 @@ void StreamRecorder::doWrite() {
             needSlice = false;
         }
     }
+    logging("%s: Write thread exit", currentStreamInfo.streamName.c_str());
     closeRecordFile();
 }
 

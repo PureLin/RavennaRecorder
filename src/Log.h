@@ -5,9 +5,19 @@
 #ifndef RAVENNAPI_LOG_H
 #define RAVENNAPI_LOG_H
 
-extern FILE *log_file;
+enum LogLevel {
+    DEBUG = 0,
+    INFO = 1,
+    WARN = 2,
+    ERROR = 3,
+};
 
-void logging(const char *message, ...); // Function declaration
-void open_log_file(); // Function declaration
+void logging(LogLevel level, const char *message, ...);
+
+void logging(const char *message, ...);
+
+void open_log_file();
+
+void set_log_level(int level);
 
 #endif //RAVENNAPI_LOG_H

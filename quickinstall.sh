@@ -15,6 +15,10 @@ sudo apt install git
 
 cd ~
 
+echo -e "\n----clean up old repo----\n"
+rm -rf *.html
+rm -rf RavennaRecorder
+
 echo -e "\n----clone the project----\n"
 
 if [ -d "RavennaRecorder" ]; then
@@ -27,3 +31,7 @@ cd RavennaRecorder
 echo -e  "\n----run install script----\n"
 sudo chmod +x install.sh
 sudo -E ./install.sh soundpuzzle
+
+echo -e "\n----remove repo----\n"
+cd ~
+rm -rf RavennaRecorder

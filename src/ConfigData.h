@@ -39,6 +39,7 @@ public:
     int httpServerPort;
     int splitTimeInMinutes;
     string configPassword = "0000";
+    int logLevel = 2;
 
     static ConfigData *getInstance();
 
