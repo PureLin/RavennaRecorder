@@ -144,6 +144,13 @@
         alert("Password Changed!");
     }
 
+    function checkUpdate() {
+        let cmd = {
+            "command": "check_update"
+        };
+        ws.send(JSON.stringify(cmd));
+    }
+
     function getChannelCheckbox(stream_id, index, channel_mask, recording) {
         return `<input type="checkbox" id="checkbox${index}" ${channel_mask[index] === '1' ? "checked" : ""}  ${recording ? "disabled" : ""} onclick="changeChannelSelected(${stream_id},${index},this.checked)" title="ch${index}">`
     }
@@ -398,8 +405,10 @@
     <div class="section">
         <label for="password" style="margin:0 20px">Password</label>
         <input type="password" id="password" value="0000" style="width: 100px; margin-right: 30px">
-        <button onclick="changePassWord()">Change
-        </button>
+        <button onclick="changePassWord()">Change</button>
+    </div>
+    <div class="section">
+        <button onclick="checkUpdate()">Check for update</button>
     </div>
 </div>
 </body>

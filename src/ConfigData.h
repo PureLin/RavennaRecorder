@@ -33,6 +33,7 @@ public:
     vector<string> availablePaths;
     string currentRecordPath = "";
     bool currentRecordPathAvailable = false;
+    bool isCheckingForUpdate = false;
     //need to be saved to Config.json
     bool startRecordImmediately;
     bool enableSaveToHomeDir;
@@ -56,6 +57,7 @@ private:
     static ConfigData instance;
 
     ConfigData() = default;
+
 };
 
 

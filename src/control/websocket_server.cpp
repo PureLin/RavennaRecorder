@@ -7,6 +7,7 @@
 #include "../Log.h"
 #include "../ConfigData.h"
 #include "../stream/StreamRecorder.h"
+#include "../common.h"
 
 using json = nlohmann::json;
 using namespace std;
@@ -124,6 +125,11 @@ void websocket_server::on_message(const websocketpp::connection_hdl &hdl, const 
         do_one_broadcast();
         return;
     }
+    if (j["command"] == "check_update") {
+        checkForUpdate();
+        do_one_broadcast();
+        return;
+    }
 }
 
 #pragma clang diagnostic push
@@ -185,6 +191,10 @@ void websocket_server::do_one_broadcast() {
     j["write_interval_in_ms"] = ConfigData::getInstance()->fileWriteIntervalInMs;
     j["start_immediately"] = ConfigData::getInstance()->startRecordImmediately;
     j["time"] = time(nullptr);
+    j["updating"] = ConfigData::getInstance()->isCheckingForUpdate;
+    if (ConfigData::getInstance()->isCheckingForUpdate) {
+        j["update_logs"] = getUpdateLogs();
+    }
     string s = j.dump();
     for (const auto &it: m_connections) {
         m_server.send(it, s, websocketpp::frame::opcode::text);

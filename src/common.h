@@ -11,6 +11,10 @@ std::string getHomeDirectory();
 
 std::string getLogDirectory();
 
+void checkForUpdate();
+
+std::vector<std::string> getUpdateLogs();
+
 bool directoryExists(const std::string &dirPath);
 
 std::string getCurrentTime();

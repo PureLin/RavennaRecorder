@@ -29,8 +29,14 @@ git clone https://github.com/PureLin/RavennaRecorder.git RavennaRecorder
 cd RavennaRecorder
 
 echo -e  "\n----run install script----\n"
+sudo chmod +x dependency.sh
+sudo -E ./dependency.sh
+
 sudo chmod +x install.sh
 sudo -E ./install.sh soundpuzzle
+
+echo -e "\n----save version number----\n"
+curl https://api.github.com/repos/PureLin/RavennaRecorder/git/refs/heads/master > version.info
 
 echo -e "\n----remove repo----\n"
 cd ~

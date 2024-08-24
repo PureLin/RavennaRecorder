@@ -7,6 +7,9 @@
 
 using namespace std;
 
+static std::thread updateThread;
+static vector<string> updateLogs;
+
 std::string getHomeDirectory() {
     const char *homeDir = std::getenv("HOME");
     if (homeDir == nullptr) {
@@ -19,6 +22,38 @@ std::string getHomeDirectory() {
 
 std::string getLogDirectory() {
     return getHomeDirectory() + "/Logs";
+}
+
+
+void updateThreadFunction() {
+    logging(LogLevel::WARN, "Checking for update");
+    ConfigData::getInstance()->isCheckingForUpdate = true;
+    string updateCommand = "curl -sL https://raw.githubusercontent.com/PureLin/RavennaRecorder/master/update.sh | sudo -E bash ";
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen((updateCommand.c_str()), "r"), pclose);
+    char line[1024];
+    while (fgets(line, sizeof(line), pipe.get())) {
+        logging(LogLevel::INFO, "Update logs: %s", line);
+        std::string log(line);
+        updateLogs.push_back(log);
+    }
+    logging(LogLevel::WARN, "Update finished");
+    ConfigData::getInstance()->isCheckingForUpdate = false;
+}
+
+void checkForUpdate() {
+    if (ConfigData::getInstance()->isCheckingForUpdate) {
+        logging(LogLevel::WARN, "Already checking for update");
+        return;
+    }
+    if (updateThread.joinable()) {
+        updateThread.join();
+    }
+    updateLogs = {};
+    updateThread = std::thread(updateThreadFunction);
+}
+
+vector<string> getUpdateLogs() {
+    return updateLogs;
 }
 
 bool directoryExists(const std::string &dirPath) {
