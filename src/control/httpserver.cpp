@@ -31,10 +31,10 @@ void httpserver::stop() {
 }
 
 void httpserver::run() {
-    svr.Options("/*", [](const httplib::Request &request, httplib::Response &res) {
+    svr.Options("/port", [](const httplib::Request &request, httplib::Response &res) {
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
+        res.set_header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization"); // Add 'Authorization' here
     });
     svr.Get("/logs", [](const httplib::Request &request, httplib::Response &res) {
         std::string directory_path = getLogDirectory();

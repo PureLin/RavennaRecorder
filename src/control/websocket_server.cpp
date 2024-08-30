@@ -118,6 +118,14 @@ void websocket_server::on_message(const websocketpp::connection_hdl &hdl, const 
         do_one_broadcast();
         return;
     }
+    if (j["command"] == "start_all_stream") {
+        for (auto &s: streamRecorderMap) {
+            s.second->start();
+        }
+        this_thread::sleep_for(chrono::milliseconds(1));
+        do_one_broadcast();
+        return;
+    }
     if (j["command"] == "update_password") {
         string password = j["password"];
         ConfigData::getInstance()->configPassword = password;

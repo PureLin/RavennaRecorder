@@ -1,4 +1,4 @@
-echo  -e "\n----Get latest version ifo----\n"
+echo  -e "\n----Get latest version ----\n"
 rm /tmp/version.info
 curl -s https://api.github.com/repos/PureLin/RavennaRecorder/git/refs/heads/master > /tmp/version.info
 
