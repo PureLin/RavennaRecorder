@@ -65,9 +65,7 @@ void websocket_server::on_message(const websocketpp::connection_hdl &hdl, const 
         if (j["split_time_minute"] != nullptr) {
             string s = j["split_time_minute"];
             int i = stoi(s);
-            if (i > 0 && i <= 100) {
-                ConfigData::getInstance()->splitTimeInMinutes = i;
-            }
+            ConfigData::getInstance()->splitTimeInMinutes = i;
         }
         if (j["write_interval_in_ms"] != nullptr) {
             string s = j["write_interval_in_ms"];
