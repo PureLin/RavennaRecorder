@@ -333,18 +333,26 @@ StreamRecorder::~StreamRecorder() {
     if (writeThread.joinable()) {
         writeThread.join();
     }
-    if (audio_receive_socket != -1) {
-        close(audio_receive_socket);
-        audio_receive_socket = -1;
-    }
     closeRecordFile();
-    if (fileBuffer != nullptr) {
-        delete[] fileBuffer;
-    }
+    delete[] fileBuffer;
 }
 
+bool StreamRecorder::inSlice() {
+    return needSlice;
+}
+
+using std::chrono::duration_cast;
+using std::chrono::seconds;
+using std::chrono::system_clock;
+
 void StreamRecorder::slice() {
-    needSlice = true;
+    if (lastSliceTime + 3 > duration_cast<seconds>(system_clock::now().time_since_epoch()).count()) {
+        return;
+    }
+    if (!needSlice && isRecording) {
+        needSlice = true;
+        lastSliceTime = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+    }
 }
 
 string StreamRecorder::getCurrentFileName() {

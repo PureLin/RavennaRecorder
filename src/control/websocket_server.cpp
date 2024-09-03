@@ -65,7 +65,7 @@ void websocket_server::on_message(const websocketpp::connection_hdl &hdl, const 
         if (j["split_time_minute"] != nullptr) {
             string s = j["split_time_minute"];
             int i = stoi(s);
-            if (i > 0 && i < 60) {
+            if (i > 0 && i <= 60) {
                 ConfigData::getInstance()->splitTimeInMinutes = i;
             }
         }
@@ -186,6 +186,7 @@ void websocket_server::do_one_broadcast() {
         m["bit_depth"] = to_string(info.bitDepth);
         m["channel_count"] = to_string(info.channelCount);
         m["status"] = s.second->getState();
+        m["in_slice"] = s.second->inSlice() ? "true" : "false";
         m["file_name"] = s.second->getCurrentFileName();
         m["channel_selected"] = s.second->getChannelSelected();
         m["error_msg"] = s.second->getErrorMessage();

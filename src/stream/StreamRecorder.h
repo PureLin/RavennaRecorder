@@ -32,6 +32,7 @@ public:
 
     void start();
 
+    bool inSlice();
     void slice();
 
     void stop();
@@ -76,6 +77,8 @@ private:
     bool networkFrameSkipping = false;
     bool audioBufferTooMuch = false;
     bool writingIsSlow = false;
+
+    int lastSliceTime = 0;
 
     void calculateRecordConfigs();
 
