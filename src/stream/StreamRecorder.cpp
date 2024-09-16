@@ -206,6 +206,7 @@ void StreamRecorder::doWrite() {
                 warningDismissTime = end + std::chrono::seconds(30);
             } else if (warningDismissTime < end) {
                 writingIsSlow = false;
+                networkFrameSkipping = false;
             }
         }
         if (writeFrame != 0 && remainSample > 0) {
@@ -220,6 +221,8 @@ void StreamRecorder::doWrite() {
         if (needSlice) {
             logging("%s: Slicing file", currentStreamInfo.streamName.c_str());
             closeRecordFile();
+            writingIsSlow = false;
+            networkFrameSkipping = false;
             needSlice = false;
         }
     }
