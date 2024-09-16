@@ -174,13 +174,13 @@ std::vector<std::string> getAvailablePath() {
             }
             currentMountPoints.push_back(mountPoint);
             if (!mountPoint.empty() && mountPoint.find("/media/") != std::string::npos) {
-                if (!directoryExists(mountPoint + "/RavennaRecords")) {
-                    if (mkdir((mountPoint + "/RavennaRecords").c_str(), 0777) == -1) {
+                if (!directoryExists(mountPoint + "/RecordFiles")) {
+                    if (mkdir((mountPoint + "/RecordFiles").c_str(), 0777) == -1) {
                         logging(LogLevel::ERROR, "Failed to create directory %s", mountPoint.c_str());
                         continue;
                     }
                 }
-                currentPaths.push_back(mountPoint + "/RavennaRecords");
+                currentPaths.push_back(mountPoint + "/RecordFiles");
             }
         }
     }
@@ -188,7 +188,7 @@ std::vector<std::string> getAvailablePath() {
         result.insert(result.end(), currentPaths.begin(), currentPaths.end());
     }
     if (ConfigData::getInstance()->enableSaveToHomeDir) {
-        string homeDir = getHomeDirectory() + "/RavennaRecords";
+        string homeDir = getHomeDirectory() + "/RecordFiles";
         if (!directoryExists(homeDir)) {
             if (mkdir((homeDir).c_str(), 0777) == -1) {
                 logging(LogLevel::ERROR, "Failed to create home directory");

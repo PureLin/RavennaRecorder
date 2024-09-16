@@ -28,8 +28,6 @@ public:
 
     ~StreamRecorder();
 
-    bool openNewFile();
-
     void start();
 
     bool inSlice();
@@ -50,6 +48,8 @@ public:
     string getChannelSelected();
 
     string getErrorMessage();
+
+    bool inRecording();
 
 private:
     bool channelSelected[MAX_RECORD_CHANNELS];
@@ -89,6 +89,8 @@ private:
     void doWrite();
 
     void closeRecordFile();
+
+    bool openNewFile();
 };
 
 

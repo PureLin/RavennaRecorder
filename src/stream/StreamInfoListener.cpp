@@ -63,9 +63,52 @@ void setup_sdp_socket() {
 }
 
 [[noreturn]] void checkDisconnectedStreams() {
+    sleep(3);
     while (true) {
         sleep(1);
-        ConfigData::getInstance()->availablePaths = getAvailablePath();
+        ConfigData *config = ConfigData::getInstance();
+        config->lastAvailablePaths.clear();
+        for (auto &path: config->availablePaths) {
+            config->lastAvailablePaths.insert(path);
+        }
+        config->availablePaths = getAvailablePath();
+        vector<string> newInsertedStorage;
+        if (config->lastAvailablePaths.size() == 0) {
+            continue;
+        }
+        for (auto &path: config->availablePaths) {
+            if (config->lastAvailablePaths.find(path) == config->lastAvailablePaths.end() &&
+                config->currentRecordPath != path) {
+                logging("New storage inserted %s", path.c_str());
+                newInsertedStorage.push_back(path);
+            }
+        }
+        if (config->enableAutoRecord) {
+            if (find(config->availablePaths.begin(), config->availablePaths.end(), config->currentRecordPath) == config->availablePaths.end()) {
+                logging("Current storage is not available, need to change to new storage");
+                config->currentRecordPath = "";
+                config->save_config();
+            }
+            if (newInsertedStorage.size() > 0) {
+                logging("New storage inserted, need slice file for recording streams");
+                config->currentRecordPath = newInsertedStorage[0];
+                config->save_config();
+                for (auto &recorder: streamRecorderMap) {
+                    if (recorder.second->inRecording()) {
+                        recorder.second->slice();
+                    }
+                }
+            }
+            if (config->currentRecordPath.empty()) {
+                continue;
+            }
+            for (auto &recorder: streamRecorderMap) {
+                if (!recorder.second->inRecording()) {
+                    logging("Start recording for stream by auto record %s", recorder.first.c_str());
+                    recorder.second->start();
+                }
+            }
+        }
     }
 }
 

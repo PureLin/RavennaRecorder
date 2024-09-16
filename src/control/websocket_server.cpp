@@ -74,6 +74,9 @@ void websocket_server::on_message(const websocketpp::connection_hdl &hdl, const 
         if (j["start_immediately"] != nullptr) {
             ConfigData::getInstance()->startRecordImmediately = j["start_immediately"];
         }
+        if (j["enable_auto_record"] != nullptr) {
+            ConfigData::getInstance()->enableAutoRecord = j["enable_auto_record"];
+        }
         ConfigData::getInstance()->save_config();
         do_one_broadcast();
     }
@@ -197,6 +200,7 @@ void websocket_server::do_one_broadcast() {
     j["split_time_minute"] = ConfigData::getInstance()->splitTimeInMinutes;
     j["write_interval_in_ms"] = ConfigData::getInstance()->fileWriteIntervalInMs;
     j["start_immediately"] = ConfigData::getInstance()->startRecordImmediately;
+    j["enable_auto_record"] = ConfigData::getInstance()->enableAutoRecord;
     j["time"] = time(nullptr);
     j["updating"] = ConfigData::getInstance()->isCheckingForUpdate;
     if (ConfigData::getInstance()->isCheckingForUpdate) {

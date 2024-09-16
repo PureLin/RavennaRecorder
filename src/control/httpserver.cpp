@@ -85,7 +85,7 @@ void httpserver::run() {
                 j["port"] = -1;
             }
         } else {
-            j["port"] = -1;
+            j["port"] = ConfigData::getInstance()->configPassword.length() == 0 ? websocket_server::port : -1;
         }
         //allow cross-origin
         res.set_header("Access-Control-Allow-Origin", "*");

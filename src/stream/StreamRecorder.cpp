@@ -427,3 +427,7 @@ string StreamRecorder::getErrorMessage() {
     }
     return std::string();
 }
+
+bool StreamRecorder::inRecording() {
+    return isRecording;
+}

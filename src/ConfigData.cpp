@@ -35,6 +35,9 @@ void ConfigData::read_config() {
         if (j.contains("startRecordImmediately")) {
             startRecordImmediately = j["startRecordImmediately"];
         }
+        if (j.contains("enableAutoRecord")) {
+            enableAutoRecord = j["enableAutoRecord"];
+        }
         if (j.contains("splitTimeInMinutes")) {
             splitTimeInMinutes = j["splitTimeInMinutes"];
         }
@@ -68,6 +71,7 @@ void ConfigData::save_config() {
     FILE *fp;
     json j;
     j["startRecordImmediately"] = startRecordImmediately;
+    j["enableAutoRecord"] = enableAutoRecord;
     j["splitTimeInMinutes"] = splitTimeInMinutes;
     if (!currentRecordPath.empty()) {
         j["defaultRecordPath"] = currentRecordPath;

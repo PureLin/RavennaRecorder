@@ -31,11 +31,13 @@ public:
     //only used in runtime
     map<string, stream_info> streamInfoMap;
     vector<string> availablePaths;
+    std::set<string> lastAvailablePaths;
     string currentRecordPath = "";
     bool currentRecordPathAvailable = false;
     bool isCheckingForUpdate = false;
     //need to be saved to Config.json
     bool startRecordImmediately;
+    bool enableAutoRecord;
     bool enableSaveToHomeDir;
     int fileWriteIntervalInMs;
     int httpServerPort;
