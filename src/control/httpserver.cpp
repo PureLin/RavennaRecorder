@@ -78,6 +78,7 @@ void httpserver::run() {
         nlohmann::json j;
         auto it = request.headers.find("Authorization");
         if (it != request.headers.end()) {
+            logging("Authorization header found");
             std::string password = it->second;
             if (password == ConfigData::getInstance()->configPassword) {
                 j["port"] = websocket_server::port;
@@ -85,6 +86,7 @@ void httpserver::run() {
                 j["port"] = -1;
             }
         } else {
+            logging("Authorization header not found, check if password is empty");
             j["port"] = ConfigData::getInstance()->configPassword.length() == 0 ? websocket_server::port : -1;
         }
         //allow cross-origin
