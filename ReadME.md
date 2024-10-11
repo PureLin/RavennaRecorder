@@ -11,6 +11,9 @@ Sound Puzzle providing funding and project oversight, while PureLIN led the deve
 Sound Puzzle, based in Canada, specializes in high-quality audio production and solutions for broadcasting, games, music, and system integration.
 ![SoundPuzzle Logo](./resource/soundpuzzle/SP.png)
 
+## WARNING: Sound Puzzle is going to release a commercial version named as SPARC
+## This project will be archived and no longer maintained, use it at your own risk.
+
 ## Compatibility with other AoIP protocol
 
 Since Ravenna is compatible with AES67, this project works with AES67 stream.
